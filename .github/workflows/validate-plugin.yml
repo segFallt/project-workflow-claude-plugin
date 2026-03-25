@@ -1,0 +1,38 @@
+name: Validate Plugin
+
+on:
+  pull_request:
+    paths:
+      - '.claude-plugin/**'
+      - 'skills/**'
+      - 'shared/**'
+      - '.ci/**'
+  push:
+    branches: [main]
+    paths:
+      - '.claude-plugin/**'
+      - 'skills/**'
+      - 'shared/**'
+      - '.ci/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude plugin validate .
+
+  validate-frontmatter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --cwd .ci --frozen-lockfile
+      - run: bun .ci/validate-frontmatter.ts .

@@ -1,0 +1,14 @@
+{
+  "name": "project-workflows-marketplace",
+  "owner": {
+    "name": "project-workflows"
+  },
+  "plugins": [
+    {
+      "name": "project-workflows",
+      "description": "Reusable workflow skills for code review, development, testing, and issue management across any project",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}
