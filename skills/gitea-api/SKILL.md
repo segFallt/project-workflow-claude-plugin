@@ -31,6 +31,10 @@ For POST/PUT/PATCH requests, add `-X POST` (or `-X PATCH`, etc.) and `-d '{...}'
 
 > **Note:** Gitea uses `Authorization: token {PAT}` — not `Bearer`. Basic authentication is also supported via `Authorization: Basic {base64(username:password)}`. Gitea is self-hosted, so the base URL is always `<INSTANCE_URL>/api/v1` (there is no central `api.gitea.com` host). Replace `<INSTANCE_URL>` with the actual Gitea instance URL (e.g., `https://gitea.example.com`).
 
+> The token variable name depends on the calling skill. Code-review agents use
+> `REVIEW_TOKEN_ENV_VAR`; all other agents use `API_TOKEN_ENV_VAR`. Substitute
+> the correct variable wherever `<API_TOKEN_ENV_VAR>` appears in the examples below.
+
 ---
 
 ## Terminology Mapping
