@@ -27,6 +27,10 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 For POST/PUT requests, add `-H "Content-Type: application/json"` and `-d '{...}'`.
 
+> The token variable name depends on the calling skill. Code-review agents use
+> `REVIEW_TOKEN_ENV_VAR`; all other agents use `API_TOKEN_ENV_VAR`. Substitute
+> the correct variable wherever `<API_TOKEN_ENV_VAR>` appears in the examples below.
+
 ---
 
 ## Terminology Mapping

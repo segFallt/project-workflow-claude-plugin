@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `bump-version.sh` split into two phases: Phase 1 bumps `plugin.json` and prepends a CHANGELOG template (no commit); Phase 2 (`--commit <version>`) validates no unfilled placeholder lines remain before committing and tagging
 - GitLab and GitHub release jobs now source release notes from `CHANGELOG.md` via `awk` (GitHub previously used auto-generated notes from PR titles)
 - `bump-version.sh` version-reading logic extracted into a `read_plugin_version()` helper to eliminate duplication between phases
+- Enforced correct token usage across all skills: `code-review` now explicitly uses `REVIEW_TOKEN_ENV_VAR` with `API_TOKEN_ENV_VAR` fallback; all `*-api` reference skills clarify token selection per calling skill; all action skills explicitly forbid use of project-owner credentials
 
 ### Fixed
 
