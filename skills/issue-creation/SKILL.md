@@ -27,7 +27,7 @@ Before running this skill, ensure the following are in place:
 | Type | Item | Notes |
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Must be populated — this is the source of truth for all repo and host configuration |
-| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host |
+| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host — must be sourced from `<ENV_FILE_PATH>`; never use the project owner's personal credentials directly |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
 
