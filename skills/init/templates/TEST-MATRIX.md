@@ -1,10 +1,11 @@
+<!-- pw-version: 1.0.1 -->
 # Integration Test Matrix
 
 This file contains all project-specific test checks and startup procedures for integration testing. The testing prompts reference this file rather than hardcoding checks inline.
 
 ## Docker Compose Startup Sequence
 
-Run these steps in order from the deployment directory (see `PROJECT.md § Infrastructure` for the path):
+Run these steps in order from the deployment directory (see `PROJECT.md § Local Development` for the path):
 
 | Step | Command | Wait for |
 |------|---------|----------|
