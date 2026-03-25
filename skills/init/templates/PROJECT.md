@@ -1,5 +1,7 @@
 # <PROJECT_NAME> — Project Reference
 
+> **Note:** This file is a structural reference template. In the interactive init flow, PROJECT.md content is generated inline from user answers — this file is not read by the init skill. It is preserved here as a human-readable reference for the expected section structure and placeholder conventions.
+
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns. Fill in every section before using the action prompts.
 
 ---
