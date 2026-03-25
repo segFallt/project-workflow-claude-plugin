@@ -1,3 +1,4 @@
+<!-- pw-version: 1.1.0 -->
 # <PROJECT_NAME> — Project Reference
 
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns. Fill in every section before using the action prompts.
