@@ -30,8 +30,8 @@ Check for environment variable values by reading `.claude/project-config/.env` i
 **Check in this order:**
 
 1. If `.claude/project-config/.env` exists, note that it was found and parse it for variable values. If it does not exist, note that it is absent (the user will need to copy `.env.example` to `.env` before using operational skills).
-2. Check whether `REPO_API_TOKEN` is defined in `.env`. If it is defined but empty, warn that it is empty. If it is absent from the file, warn that it is missing.
-3. `REVIEW_API_TOKEN` — optional. Report whether it is set or not set; do not warn either way.
+2. Check whether `API_TOKEN_ENV_VAR` is defined in `.env`. If it is defined but empty, warn that it is empty. If it is absent from the file, warn that it is missing.
+3. `REVIEW_TOKEN_ENV_VAR` — optional. Report whether it is set or not set; do not warn either way.
 4. `REPO_HOST_URL` — required only for self-hosted instances (GitHub Enterprise, self-hosted GitLab, self-hosted Gitea). Warn if absent and the user appears to be using a self-hosted host.
 
 **Summary:** Print a list of any warnings. If everything looks good, say so.
@@ -110,7 +110,8 @@ Throughout skill instructions and config files, you will see references like `PR
 **4. Environment setup**
 
 Copy `.claude/project-config/.env.example` to `.claude/project-config/.env` and fill in at minimum:
-- `REPO_API_TOKEN` — your repository host personal access token (GitHub/GitLab/Gitea)
+- `API_TOKEN_ENV_VAR` — your repository host personal access token (GitHub/GitLab/Gitea)
+- `REVIEW_TOKEN_ENV_VAR` — optional; a separate token used only by the `code-review` skill (leave empty to reuse `API_TOKEN_ENV_VAR`)
 - `REPO_HOST_URL` — only needed for self-hosted instances; leave empty for hosted GitHub.com or GitLab.com
 
 Setup is complete. Proceed to fill in `PROJECT.md`.

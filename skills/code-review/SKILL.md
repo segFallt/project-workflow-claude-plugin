@@ -27,7 +27,7 @@ Before running this skill, ensure the following are in place:
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Must be populated — this is the source of truth for all repo and host configuration |
 | Config | `.claude/project-config/REVIEW-CRITERIA.md` | Required — contains universal and per-repo review criteria |
-| Env var | `REPO_API_TOKEN` | Personal access token for the repository host |
+| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
 
