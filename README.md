@@ -30,7 +30,7 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 
 1. Register the marketplace directly from the git repository:
    ```bash
-   claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
+   claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin.git
    ```
 
 2. Install the plugin (project scope recommended):
@@ -86,13 +86,13 @@ This plugin uses [Semantic Versioning](https://semver.org/). Releases are tagged
 The standard install uses the git repository URL directly and pulls the latest `main`:
 
 ```bash
-claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
+claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin.git
 ```
 
 To pin to a specific tagged release, clone at the desired tag and register using `$HOME` or a full `/absolute/path`:
 
 ```bash
-git clone --branch v1.0.0 https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git $HOME/project-workflow-claude-plugin
+git clone --branch v1.0.0 https://github.com/segFallt/project-workflow-claude-plugin.git $HOME/project-workflow-claude-plugin
 claude plugin marketplace add $HOME/project-workflow-claude-plugin
 ```
 
