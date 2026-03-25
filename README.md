@@ -28,24 +28,17 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 
 ## Installation
 
-### Local install via marketplace
-
-1. Clone or download this repository:
+1. Register the marketplace directly from the git repository:
    ```bash
-   git clone <repository-url>
+   claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
    ```
 
-2. Register the local marketplace:
-   ```bash
-   claude plugin marketplace add /path/to/project-workflow-claude-plugin
-   ```
-
-3. Install the plugin (project scope recommended):
+2. Install the plugin (project scope recommended):
    ```bash
    claude plugin install project-workflows@project-workflows-marketplace --scope project
    ```
 
-4. Verify the installation:
+3. Verify the installation:
    ```bash
    claude plugin list
    ```
