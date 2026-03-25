@@ -66,7 +66,7 @@ From the answers, **derive automatically** (do not ask):
 **Generate immediately:** Write `.claude/project-config/PROJECT.md` with the following content populated from the answers. Use `<!-- not-configured -->` as a single-line placeholder for sections not yet collected. The first line of the file **must** be the version stamp.
 
 ```
-<!-- pw-version: 1.1.0 -->
+<!-- pw-version: 1.0.1 -->
 # {project_name} — Project Reference
 
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns.
@@ -503,7 +503,7 @@ Ask the user (use `AskUserQuestion` tool with multi-select):
 **For `code-review`:** Generate `.claude/project-config/REVIEW-CRITERIA.md` with the following structure. For the per-repo sections, generate one `## {repo_name}` section for each repository collected in Step 4 — do not write a for-loop literally; expand it into actual sections.
 
 ```
-<!-- pw-version: 1.1.0 -->
+<!-- pw-version: 1.0.1 -->
 # Review Criteria
 
 Per-repo review criteria. Read the relevant section when reviewing an MR for a given repo. The **Universal** criteria apply to all repos regardless.
@@ -526,6 +526,7 @@ Per-repo review criteria. Read the relevant section when reviewing an MR for a g
 ## Per-Repository Review Criteria
 
 > Add one section per repository below. Each section should focus on checks specific to that repo's tech stack, conventions, and common pitfalls.
+```
 
 Generate one block like the following for each repo from Step 4, expanded into actual `## {repo_name}` sections:
 
@@ -545,7 +546,7 @@ If they provide criteria, update the relevant `## {repo_name}` sections with pop
 
 **For `testing-static` or `testing-prd`:** Generate `.claude/project-config/TEST-MATRIX.md`:
 
-Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.1.0 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
+Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.0.1 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
 
 - **Docker Compose Startup Sequence:** Replace `<WORKTREES_BASE>` with the actual worktrees base from Step 5. Replace `<DEPLOY_REPO>` with the deploy repo from Step 5. Fill in the migration command (Step 4) and seed command (Step 5) if provided; otherwise leave the `<!-- REPLACE THIS -->` markers.
 - **All `<!-- REPLACE THIS: ... -->` comment blocks:** Keep them in place so the user knows what to fill in. Do NOT remove these markers — they are review prompts for the user.
@@ -562,11 +563,11 @@ Ask:
 > - Test method (curl HTTP calls, Playwright, etc.)
 > - Priority: Must Have / Should Have / Nice to Have"
 
-Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.1.0 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
+Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.0.1 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
 
 **For any skill NOT selected:** Still create the config file (so it exists and is discoverable) but with a clear header:
 ```
-<!-- pw-version: 1.1.0 -->
+<!-- pw-version: 1.0.1 -->
 <!-- pw-status: not-configured -->
 > **Note:** This file has not been configured yet. Run `/project-workflows:init` and select the relevant skill to set it up interactively.
 ```
@@ -691,9 +692,9 @@ Example output format:
 
 | File | Version | Status | Notes |
 |------|---------|--------|-------|
-| PROJECT.md | 1.1.0 | 10/14 sections configured | Unconfigured: API Endpoints, DB Schema, Cross-Cutting, Git Tags |
-| REVIEW-CRITERIA.md | 1.1.0 | Scaffolded | Per-repo criteria not yet filled in |
-| TEST-MATRIX.md | 1.1.0 | Partial | 3 REPLACE THIS markers remain |
+| PROJECT.md | 1.0.1 | 10/14 sections configured | Unconfigured: API Endpoints, DB Schema, Cross-Cutting, Git Tags |
+| REVIEW-CRITERIA.md | 1.0.1 | Scaffolded | Per-repo criteria not yet filled in |
+| TEST-MATRIX.md | 1.0.1 | Partial | 3 REPLACE THIS markers remain |
 | PRD-MANIFEST.md | — | Not created | |
 | .env | — | Present | API_TOKEN_ENV_VAR set |
 ```
@@ -750,11 +751,11 @@ Handle each option:
 
 If any file's `<!-- pw-version:` stamp reads `1.0.0` (the previous release):
 
-> "Some config files were generated with an older version of the plugin (1.0.0). I can migrate them to the current structure (1.1.0) while preserving your existing content. The main changes are: section cross-references were corrected (`§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md; `testing-2.md` → `testing-prd` in PRD-MANIFEST.md). Would you like to migrate now?"
+> "Some config files were generated with an older version of the plugin (1.0.0). I can migrate them to the current structure (1.0.1) while preserving your existing content. The main changes are: section cross-references were corrected (`§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md; `testing-2.md` → `testing-prd` in PRD-MANIFEST.md). Would you like to migrate now?"
 
-If yes: read the existing content, extract user-populated values by section, regenerate the file with the current structure, and update the version stamp to `1.1.0`.
+If yes: read the existing content, extract user-populated values by section, regenerate the file with the current structure, and update the version stamp to `1.0.1`.
 
-> **Maintenance note:** When the plugin version is bumped in future, update this section to list the new version number, the previous version(s) that require migration, and the specific structural changes between them. Use explicit version string matching (e.g., `reads 1.0.0` or `reads 1.1.0`) rather than numeric comparison to avoid ambiguity with semver strings like `1.9.0` vs `1.10.0`.
+> **Maintenance note:** When the plugin version is bumped in future, update this section to list the new version number, the previous version(s) that require migration, and the specific structural changes between them. Use explicit version string matching (e.g., `reads 1.0.0` or `reads 1.0.1`) rather than numeric comparison to avoid ambiguity with semver strings like `1.9.0` vs `1.10.0`.
 
 ---
 
@@ -787,7 +788,7 @@ The following headings in `PROJECT.md` are read by other skills and **must appea
 
 ### Version Stamp Format
 
-Always place `<!-- pw-version: 1.1.0 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
+Always place `<!-- pw-version: 1.0.1 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
 
 ### Not-Configured Marker
 

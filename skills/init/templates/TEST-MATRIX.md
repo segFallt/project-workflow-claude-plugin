@@ -1,4 +1,4 @@
-<!-- pw-version: 1.1.0 -->
+<!-- pw-version: 1.0.1 -->
 # Integration Test Matrix
 
 This file contains all project-specific test checks and startup procedures for integration testing. The testing prompts reference this file rather than hardcoding checks inline.
