@@ -1,5 +1,6 @@
 stages:
   - validate
+  - release
 
 validate-plugin:
   stage: validate
@@ -32,3 +33,34 @@ validate-frontmatter:
         - skills/**/*.md
         - shared/**/*.md
         - .ci/**/*
+
+validate-version:
+  stage: validate
+  image: node:lts
+  script:
+    - |
+      TAG_VERSION="${CI_COMMIT_TAG#v}"
+      PLUGIN_VERSION=$(node -p "require('./.claude-plugin/plugin.json').version")
+      if [ "$TAG_VERSION" != "$PLUGIN_VERSION" ]; then
+        echo "ERROR: Tag version '$TAG_VERSION' does not match plugin.json version '$PLUGIN_VERSION'"
+        exit 1
+      fi
+      echo "Version match: $PLUGIN_VERSION"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - validate-version
+  script:
+    - |
+      awk '/^## \[/{found++} found==1{print} found==2{exit}' CHANGELOG.md > /tmp/release-notes.md
+      echo "Release notes extracted for $CI_COMMIT_TAG"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: Release $CI_COMMIT_TAG
+    description: /tmp/release-notes.md
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
