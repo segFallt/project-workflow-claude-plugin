@@ -526,9 +526,11 @@ Per-repo review criteria. Read the relevant section when reviewing an MR for a g
 ## Per-Repository Review Criteria
 
 > Add one section per repository below. Each section should focus on checks specific to that repo's tech stack, conventions, and common pitfalls.
+```
 
-[Generate one block like the following per repo from Step 4:]
+Generate one block like the following for each repo from Step 4, expanded into actual `## {repo_name}` sections:
 
+```
 ## {repo_name}
 
 | Check | Details |
