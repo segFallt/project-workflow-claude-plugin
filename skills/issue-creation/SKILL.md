@@ -27,7 +27,7 @@ Before running this skill, ensure the following are in place:
 | Type | Item | Notes |
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Must be populated — this is the source of truth for all repo and host configuration |
-| Env var | `REPO_API_TOKEN` | Personal access token for the repository host |
+| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
 
@@ -330,7 +330,7 @@ Pause and wait for user input at these points:
 |----------|----------|
 | Label doesn't exist | Omit the label; note in the summary which labels were skipped |
 | Duplicate issue found | Present the existing issue URL to the user; ask whether to proceed or close |
-| API 401 Unauthorized | Check that `REPO_API_TOKEN` is set and has the required scope |
+| API 401 Unauthorized | Check that `API_TOKEN_ENV_VAR` is set and has the required scope |
 | API 403 Forbidden | Verify token has access to the configured group/org |
 | API 404 Not Found | Verify the project identifier is correct and properly encoded |
 | API 422 Unprocessable | Check request body — title is required; milestone_id must reference an active milestone |
