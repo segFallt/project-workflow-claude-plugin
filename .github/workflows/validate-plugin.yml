@@ -36,3 +36,11 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --cwd .ci --frozen-lockfile
       - run: bun .ci/validate-frontmatter.ts .
+
+  smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh .ci/smoke-test.sh
