@@ -1,0 +1,8 @@
+{
+  "name": "project-workflows",
+  "description": "Reusable workflow skills for code review, development, testing, and issue management across any project",
+  "version": "1.0.0",
+  "author": { "name": "project-workflows" },
+  "license": "MIT",
+  "keywords": ["skills", "workflows", "code-review", "development", "testing", "issues"]
+}
