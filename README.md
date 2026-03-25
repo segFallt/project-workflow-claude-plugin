@@ -30,7 +30,7 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 
 1. Register the marketplace directly from the git repository:
    ```bash
-   claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
+   claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin
    ```
 
 2. Install the plugin (project scope recommended):
@@ -76,3 +76,45 @@ Once configured, invoke skills using the Claude Code slash command syntax:
 ```
 
 The API reference skills (`gitlab-api`, `github-api`, `gitea-api`) are loaded automatically by other skills when needed and do not need to be invoked directly.
+
+## Versioning & Releases
+
+This plugin uses [Semantic Versioning](https://semver.org/). Releases are tagged with `v<major>.<minor>.<patch>` (e.g., `v1.0.0`).
+
+### Installing a specific version
+
+The standard install uses the git repository URL directly and pulls the latest `main`:
+
+```bash
+claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin
+```
+
+To pin to a specific tagged release, clone at the desired tag and register the local path:
+
+```bash
+git clone --branch v1.0.0 https://github.com/segFallt/project-workflow-claude-plugin
+claude plugin marketplace add ./project-workflow-claude-plugin
+```
+
+### Release history
+
+All releases are listed on the [GitLab Releases page](https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin/-/releases). See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
+
+### Creating a release (maintainers)
+
+Use the helper script to bump the version, update the changelog, commit, and tag in one step:
+
+```bash
+.ci/bump-version.sh patch   # 1.0.0 → 1.0.1
+.ci/bump-version.sh minor   # 1.0.0 → 1.1.0
+.ci/bump-version.sh major   # 1.0.0 → 2.0.0
+.ci/bump-version.sh 2.5.0   # explicit version
+```
+
+Then edit `CHANGELOG.md` to fill in the release notes, and push:
+
+```bash
+git push origin main --tags
+```
+
+CI will validate that the tag matches `plugin.json` and create a GitLab and GitHub Release automatically.
