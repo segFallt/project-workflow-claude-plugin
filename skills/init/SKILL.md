@@ -5,6 +5,8 @@ description: Use when setting up a new project to use the project-workflows plug
 
 You are configuring the `project-workflows` plugin for a project. Your first job is to detect whether this is a fresh setup or an update to existing configuration.
 
+> **Note on `AskUserQuestion`:** This skill calls `AskUserQuestion` for multi-select questions (skill selection, optional section selection). This is a native Claude Code tool available in all plugin contexts. For other questions, ask conversationally in your response text.
+
 ---
 
 ## Step 1: Detect Mode
@@ -303,7 +305,7 @@ Ask as a single conversational grouped prompt:
 
 **Generate:** Update PROJECT.md using `Edit` tool:
 
-**Concurrent Session Isolation section:** Replace the `<!-- not-configured -->` stub with the full worktree documentation from the template, substituting `{worktrees_base}` for all occurrences of `<WORKTREES_BASE>`. The section structure must be preserved exactly (Why worktrees, Directory convention, Creating a worktree, Preserving relative paths, Working in the worktree, Sub-agents, Cleanup, Caveats). Use the first repo from Phase 4 as the example `<REPO_NAME>` in the template commands.
+**Concurrent Session Isolation section:** Replace the `<!-- not-configured -->` stub with the full worktree documentation from the template, substituting `{worktrees_base}` for all occurrences of `<WORKTREES_BASE>`. The section structure must be preserved exactly (Why worktrees, Directory convention, Creating a worktree, Preserving relative paths, Working in the worktree, Sub-agents, Cleanup, Caveats). Use the first repo from Phase 4 as the example `<REPO_NAME>` in the template commands. If no repos were collected in Phase 4, leave `<REPO_NAME>` as a literal placeholder and add a comment: `<!-- Replace <REPO_NAME> with your primary repository name -->`.
 
 **Container Registry section:** If a registry was provided:
 ```
@@ -399,7 +401,7 @@ Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` f
 }
 {if prd_directory was 'none' or skipped:
 <!-- not-configured -->
-> PRD directory not set. Run `/project-workflows:init` → "Fill in a section" → "Domain Concepts" to configure it.
+> This section has not been configured yet. Run `/project-workflows:init` to set it up.
 }
 ```
 
@@ -498,7 +500,8 @@ Ask the user (use `AskUserQuestion` tool with multi-select):
 > - `testing-static` — integration testing with static test matrix (needs TEST-MATRIX.md)
 > - `testing-prd` — integration testing driven by your PRDs (needs TEST-MATRIX.md + PRD-MANIFEST.md)
 
-**For `code-review`:** Generate `.claude/project-config/REVIEW-CRITERIA.md`:
+**For `code-review`:** Generate `.claude/project-config/REVIEW-CRITERIA.md` with the following structure. For the per-repo sections, generate one `## {repo_name}` section for each repository collected in Step 4 — do not write a for-loop literally; expand it into actual sections.
+
 ```
 <!-- pw-version: 1.1.0 -->
 # Review Criteria
@@ -524,7 +527,7 @@ Per-repo review criteria. Read the relevant section when reviewing an MR for a g
 
 > Add one section per repository below. Each section should focus on checks specific to that repo's tech stack, conventions, and common pitfalls.
 
-{for each repo from Step 4, generate an empty section:}
+[Generate one block like the following per repo from Step 4:]
 
 ## {repo_name}
 
@@ -588,7 +591,7 @@ REPO_HOST_URL=
 ```
 
 Ask the user:
-> "Would you like to create your `.env` file now? It will be written to `.claude/project-config/.env` (make sure this path is in your `.gitignore`). If yes, provide your API token value — I'll create the file with it set."
+> "Would you like to create your `.env` file now? It will be written directly to `.claude/project-config/.env` — your token will not be stored anywhere else. (Make sure `.claude/project-config/.env` is in your `.gitignore`.) If yes, provide your API token value."
 
 If yes: create `.claude/project-config/.env` with `API_TOKEN_ENV_VAR={token}` and the other two variables empty with comments.
 
@@ -727,7 +730,8 @@ Handle each option:
 **Configure a skill:**
 - Ask which skill (code-review / testing-static / testing-prd).
 - Run the relevant interview sub-flow from Step 7.
-- Generate or update the relevant config file.
+- If the config file already exists with `<!-- pw-status: not-configured -->`, overwrite it entirely with the newly generated content (do not attempt to merge with the stub).
+- If the config file already exists with populated content, use `Edit` tool to surgically update sections.
 
 **Update repository details:**
 - Ask: "Which repository, and what do you want to change?"
@@ -736,17 +740,20 @@ Handle each option:
 **Refresh all:**
 - For each PROJECT.md section, read the current content and present it as the default, then ask if the user wants to change it.
 - This is a full re-interview where each answer is pre-populated with existing content.
+- **Caveat:** The agent reads back its own previously generated markdown (tables, prose) rather than a saved answer log. For structured sections like `## Tech Stacks Per Repo`, the agent will parse table rows back into answer form. This works for most content but may lose formatting nuance. Inform the user: "I'll use your current config as defaults — let me know if anything looks off."
 
 **Something else:**
 - Ask the user to describe the change. Make the edit directly.
 
 ### U3: Version Mismatch
 
-If any file's `<!-- pw-version:` stamp is lower than `1.1.0`:
+If any file's `<!-- pw-version:` stamp reads `1.0.0` (the previous release):
 
-> "Some config files were generated with an older version of the plugin. I can migrate them to the current structure while preserving your existing content. The main changes are: [list any structural changes between versions]. Would you like to migrate now?"
+> "Some config files were generated with an older version of the plugin (1.0.0). I can migrate them to the current structure (1.1.0) while preserving your existing content. The main changes are: section cross-references were corrected (`§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md; `testing-2.md` → `testing-prd` in PRD-MANIFEST.md). Would you like to migrate now?"
 
-If yes: read the existing content, extract user-populated values by section, regenerate the file with the new template structure, and re-insert the user values. Update the version stamp.
+If yes: read the existing content, extract user-populated values by section, regenerate the file with the current structure, and update the version stamp to `1.1.0`.
+
+> **Maintenance note:** When the plugin version is bumped in future, update this section to list the new version number, the previous version(s) that require migration, and the specific structural changes between them. Use explicit version string matching (e.g., `reads 1.0.0` or `reads 1.1.0`) rather than numeric comparison to avoid ambiguity with semver strings like `1.9.0` vs `1.10.0`.
 
 ---
 

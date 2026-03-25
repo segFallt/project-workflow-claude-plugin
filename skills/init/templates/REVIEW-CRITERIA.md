@@ -1,5 +1,6 @@
-<!-- pw-version: 1.1.0 -->
 # Review Criteria
+
+> **Note:** This file is a structural reference template. In the interactive init flow, REVIEW-CRITERIA.md content is generated inline from user answers — this file is not read by the init skill. It is preserved here as a human-readable reference for the expected section structure.
 
 Per-repo review criteria. Read the relevant section when reviewing an MR for a given repo. The **Universal** criteria apply to all repos regardless.
 
