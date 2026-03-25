@@ -89,12 +89,14 @@ The standard install uses the git repository URL directly and pulls the latest `
 claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin
 ```
 
-To pin to a specific tagged release, clone at the desired tag and register the local path:
+To pin to a specific tagged release, clone at the desired tag and register using `$HOME` or a full `/absolute/path`:
 
 ```bash
 git clone --branch v1.0.0 https://github.com/segFallt/project-workflow-claude-plugin
 claude plugin marketplace add ./project-workflow-claude-plugin
 ```
+
+> **Note:** The path passed to `marketplace add` must resolve to an absolute path starting with `/`. `$HOME` and `~` both work because the shell expands them before Claude sees the value — but a relative path (e.g. `./project-workflow-claude-plugin`) will cause a `Marketplace file not found` error. Do not move or delete the cloned directory after registration.
 
 ### Release history
 
