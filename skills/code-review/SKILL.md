@@ -27,7 +27,8 @@ Before running this skill, ensure the following are in place:
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Must be populated — this is the source of truth for all repo and host configuration |
 | Config | `.claude/project-config/REVIEW-CRITERIA.md` | Required — contains universal and per-repo review criteria |
-| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host |
+| Env var | `REVIEW_TOKEN_ENV_VAR` | Dedicated review bot token — used for all API calls in this skill (falls back to `API_TOKEN_ENV_VAR` if not set) |
+| Env var | `API_TOKEN_ENV_VAR` | Fallback personal access token — used only when `REVIEW_TOKEN_ENV_VAR` is not configured |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
 
@@ -51,6 +52,11 @@ Read the **Source Control** section of `.claude/project-config/PROJECT.md` for:
 ```bash
 source <ENV_FILE_PATH>
 ```
+
+**Token selection:**
+- Use `REVIEW_TOKEN_ENV_VAR` as the token for all API calls made during review.
+- If `REVIEW_TOKEN_ENV_VAR` is not set or is empty, fall back to `API_TOKEN_ENV_VAR`.
+- Never use the project owner's personal credentials.
 
 ### Repos in Scope
 

@@ -29,7 +29,7 @@ Before running this skill, ensure the following are in place:
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Source of truth for architecture, repos, and host configuration |
 | Config | `.claude/project-config/TEST-MATRIX.md` | Static test matrix, startup sequence, and model selection |
-| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host |
+| Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host — must be sourced from `<ENV_FILE_PATH>`; never use the project owner's personal credentials directly |
 | Tool | `curl` | Required for API and health checks |
 | Tool | `git` | Required for branch and worktree operations |
 | Tool | `docker compose` | Required for stack management |

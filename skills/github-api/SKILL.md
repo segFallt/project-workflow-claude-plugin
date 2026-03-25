@@ -31,6 +31,10 @@ For POST/PUT/PATCH requests, add `-H "Content-Type: application/json"` and `-d '
 
 > **Note:** GitHub recommends including both `Accept` and `X-GitHub-Api-Version` headers on every request. The legacy `Authorization: token $<API_TOKEN_ENV_VAR>` format also works but is deprecated. For GitHub Enterprise Server, replace `https://api.github.com` with `<INSTANCE_URL>/api/v3`.
 
+> The token variable name depends on the calling skill. Code-review agents use
+> `REVIEW_TOKEN_ENV_VAR`; all other agents use `API_TOKEN_ENV_VAR`. Substitute
+> the correct variable wherever `<API_TOKEN_ENV_VAR>` appears in the examples below.
+
 ---
 
 ## Terminology Mapping
