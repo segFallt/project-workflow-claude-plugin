@@ -1,0 +1,34 @@
+stages:
+  - validate
+
+validate-plugin:
+  stage: validate
+  image: node:lts
+  cache:
+    # Bump the version suffix (e.g. v2, v3) when a new @anthropic-ai/claude-code release is needed
+    key: npm-global-claude-code-v1
+    paths:
+      - .npm-global/
+  before_script:
+    - npm config set prefix '.npm-global'
+    - export PATH="$PWD/.npm-global/bin:$PATH"
+    - npm install -g @anthropic-ai/claude-code
+  script:
+    - claude plugin validate .
+  rules:
+    - changes:
+        - .claude-plugin/**/*
+        - skills/**/*
+        - shared/**/*
+
+validate-frontmatter:
+  stage: validate
+  image: oven/bun:latest
+  script:
+    - bun install --cwd .ci --frozen-lockfile
+    - bun .ci/validate-frontmatter.ts .
+  rules:
+    - changes:
+        - skills/**/*.md
+        - shared/**/*.md
+        - .ci/**/*
