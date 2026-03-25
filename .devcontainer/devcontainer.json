@@ -1,0 +1,9 @@
+{
+  "name": "project-workflows",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node",
+  "features": {
+    "ghcr.io/michidk/devcontainers-features/bun:1": {}
+  },
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && bun install --cwd .ci --frozen-lockfile",
+  "remoteUser": "node"
+}
