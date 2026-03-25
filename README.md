@@ -98,13 +98,42 @@ claude plugin marketplace add ./project-workflow-claude-plugin
 
 > **Note:** The path passed to `marketplace add` must resolve to an absolute path starting with `/`. `$HOME` and `~` both work because the shell expands them before Claude sees the value — but a relative path (e.g. `./project-workflow-claude-plugin`) will cause a `Marketplace file not found` error. Do not move or delete the cloned directory after registration.
 
+### Updating the plugin
+
+**Tracking latest (installed from git URL):**
+
+Claude Code pulls marketplace updates automatically at the start of each session. To force an immediate update, re-run the original `marketplace add` command — it will refresh the local clone:
+
+```bash
+claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin.git
+```
+
+If your version of Claude Code includes the `update` subcommand, you can also use it as a shorthand:
+
+```bash
+claude plugin update project-workflows
+```
+
+Note: the `update` subcommand may not be available in all versions of Claude Code — use the `marketplace add` approach above if it is not.
+
+**Pinned to a specific version (installed from local clone):**
+
+Fetch the new tags and check out the desired version, then the plugin is updated in-place (no reinstall needed):
+
+```bash
+git -C $HOME/project-workflow-claude-plugin fetch --tags
+git -C $HOME/project-workflow-claude-plugin checkout v1.0.0
+```
+
 ### Release history
 
-All releases are listed on the [GitLab Releases page](https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin/-/releases). See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
+All releases are listed on the [GitLab Releases page](https://github.com/segFallt/project-workflow-claude-plugin/releases). See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 ### Creating a release (maintainers)
 
-Use the helper script to bump the version, update the changelog, commit, and tag in one step:
+The release process is split into two phases.
+
+**Phase 1 — Bump version and prepare changelog:**
 
 ```bash
 .ci/bump-version.sh patch   # 1.0.0 → 1.0.1
@@ -113,7 +142,17 @@ Use the helper script to bump the version, update the changelog, commit, and tag
 .ci/bump-version.sh 2.5.0   # explicit version
 ```
 
-Then edit `CHANGELOG.md` to fill in the release notes, and push:
+This updates `plugin.json` and prepends a changelog template section. Edit `CHANGELOG.md` to fill in the release notes.
+
+**Phase 2 — Validate and commit once the changelog is filled in:**
+
+```bash
+.ci/bump-version.sh --commit <x.y.z>
+```
+
+This validates that the changelog entry has no unfilled placeholder lines, then commits and tags.
+
+Finally push:
 
 ```bash
 git push origin main --tags

@@ -34,6 +34,18 @@ validate-frontmatter:
         - shared/**/*.md
         - .ci/**/*
 
+smoke-test:
+  stage: validate
+  image: alpine:latest
+  script:
+    - sh .ci/smoke-test.sh
+  rules:
+    - changes:
+        - .claude-plugin/**/*
+        - skills/**/*
+        - shared/**/*
+        - .ci/smoke-test.sh
+
 validate-version:
   stage: validate
   image: node:lts
@@ -54,13 +66,26 @@ release:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
     - validate-version
+  before_script:
+    - apk add --no-cache curl tar
   script:
     - |
       awk '/^## \[/{found++} found==1{print} found==2{exit}' CHANGELOG.md > /tmp/release-notes.md
+      [ -s /tmp/release-notes.md ] || { echo "ERROR: No release notes extracted from CHANGELOG.md — check CHANGELOG format"; exit 1; }
       echo "Release notes extracted for $CI_COMMIT_TAG"
+      ARCHIVE="project-workflows-${CI_COMMIT_TAG}.tar.gz"
+      tar czf "$ARCHIVE" skills/ shared/ .claude-plugin/ README.md CHANGELOG.md
+      curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" \
+        --upload-file "$ARCHIVE" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/project-workflows/${CI_COMMIT_TAG}/${ARCHIVE}"
   release:
     tag_name: $CI_COMMIT_TAG
     name: Release $CI_COMMIT_TAG
     description: /tmp/release-notes.md
+    assets:
+      links:
+        - name: "project-workflows-${CI_COMMIT_TAG}.tar.gz"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/project-workflows/${CI_COMMIT_TAG}/project-workflows-${CI_COMMIT_TAG}.tar.gz"
+          link_type: package
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'

@@ -1,11 +1,21 @@
 #!/bin/sh
 # bump-version.sh — Bump plugin version, update CHANGELOG, commit, and tag.
 #
-# Usage:
+# Usage — Phase 1 (prepare):
 #   .ci/bump-version.sh patch          # 1.0.0 → 1.0.1
 #   .ci/bump-version.sh minor          # 1.0.0 → 1.1.0
 #   .ci/bump-version.sh major          # 1.0.0 → 2.0.0
 #   .ci/bump-version.sh 2.5.0          # explicit version
+#
+#   Bumps plugin.json and prepends a CHANGELOG template section. Prints
+#   instructions and exits. Does NOT commit or tag.
+#
+# Usage — Phase 2 (commit):
+#   .ci/bump-version.sh --commit <x.y.z>
+#
+#   Verifies plugin.json is already at <x.y.z>, checks that the CHANGELOG
+#   entry for [<x.y.z>] has no unfilled placeholder lines (bare "-"), then
+#   runs git add, git commit, and git tag. Prints push instructions.
 #
 # The script does NOT push — it prints push instructions at the end.
 
@@ -14,25 +24,91 @@ set -eu
 PLUGIN_JSON=".claude-plugin/plugin.json"
 CHANGELOG="CHANGELOG.md"
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+# read_plugin_version — sets CURRENT to the version string in plugin.json.
+# Prefers node for safe JSON parsing; falls back to grep+sed if node is absent.
+read_plugin_version() {
+  CURRENT=$(node -p "require('./$PLUGIN_JSON').version" 2>/dev/null) || {
+    CURRENT=$(grep '"version"' "$PLUGIN_JSON" | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+  }
+}
+
 # ── Validate arguments ────────────────────────────────────────────────────────
 
 BUMP_ARG="${1:-}"
 if [ -z "$BUMP_ARG" ]; then
   echo "Usage: $0 <major|minor|patch|x.y.z>"
+  echo "       $0 --commit <x.y.z>"
   exit 1
 fi
 
-# ── Read current version ──────────────────────────────────────────────────────
+# ── Phase 2: --commit <version> ───────────────────────────────────────────────
+
+if [ "$BUMP_ARG" = "--commit" ]; then
+  COMMIT_VERSION="${2:-}"
+  if [ -z "$COMMIT_VERSION" ]; then
+    echo "Usage: $0 --commit <x.y.z>"
+    exit 1
+  fi
+
+  # Verify plugin.json exists before anything else
+  if [ ! -f "$PLUGIN_JSON" ]; then
+    echo "ERROR: $PLUGIN_JSON not found. Run this script from the repository root."
+    exit 1
+  fi
+
+  # Validate version format
+  echo "$COMMIT_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || {
+    echo "ERROR: '$COMMIT_VERSION' is not a valid semver string (expected x.y.z)"
+    exit 1
+  }
+
+  read_plugin_version
+
+  if [ "$CURRENT" != "$COMMIT_VERSION" ]; then
+    echo "ERROR: plugin.json version is '$CURRENT', expected '$COMMIT_VERSION'."
+    echo "       Run '.ci/bump-version.sh $COMMIT_VERSION' first (Phase 1)."
+    exit 1
+  fi
+
+  # Guard against duplicate tags
+  if git rev-parse "v$COMMIT_VERSION" > /dev/null 2>&1; then
+    echo "ERROR: Tag v$COMMIT_VERSION already exists locally or has been fetched"
+    exit 1
+  fi
+
+  # Extract top CHANGELOG entry for ## [<version>] and count bare placeholder lines
+  PLACEHOLDER_COUNT=$(awk \
+    '/^## \['"$COMMIT_VERSION"'\]/{found=1; next} /^## \[/ && found{exit} found && /^-$/{count++} END{print count+0}' \
+    "$CHANGELOG")
+
+  if [ "$PLACEHOLDER_COUNT" -gt 0 ]; then
+    echo "ERROR: CHANGELOG.md contains $PLACEHOLDER_COUNT unfilled placeholder line(s) (bare \"-\") in the [${COMMIT_VERSION}] section."
+    echo "       Please fill in the release notes before committing."
+    exit 1
+  fi
+
+  # Commit and tag
+  git add "$PLUGIN_JSON" "$CHANGELOG"
+  git commit -m "chore: release v$COMMIT_VERSION"
+  git tag "v$COMMIT_VERSION"
+
+  echo "Created commit and tag v$COMMIT_VERSION."
+  echo ""
+  echo "When ready, push with:"
+  echo "  git push origin main --tags"
+  exit 0
+fi
+
+# ── Phase 1: bump plugin.json and prepend CHANGELOG template ─────────────────
 
 if [ ! -f "$PLUGIN_JSON" ]; then
   echo "ERROR: $PLUGIN_JSON not found. Run this script from the repository root."
   exit 1
 fi
 
-CURRENT=$(node -p "require('./$PLUGIN_JSON').version" 2>/dev/null) || {
-  # Fallback: parse with grep/sed if node is unavailable
-  CURRENT=$(grep '"version"' "$PLUGIN_JSON" | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-}
+read_plugin_version
 
 if [ -z "$CURRENT" ]; then
   echo "ERROR: Could not read version from $PLUGIN_JSON"
@@ -72,13 +148,6 @@ case "$BUMP_ARG" in
 esac
 
 echo "Bumping $CURRENT → $NEW_VERSION"
-
-# ── Guard against duplicate tags ──────────────────────────────────────────────
-
-if git rev-parse "v$NEW_VERSION" > /dev/null 2>&1; then
-  echo "ERROR: Tag v$NEW_VERSION already exists locally or has been fetched"
-  exit 1
-fi
 
 # ── Update plugin.json ────────────────────────────────────────────────────────
 
@@ -127,16 +196,7 @@ awk -v entry="$ENTRY" '
 
 echo "Prepended template section to $CHANGELOG"
 echo ""
-echo "  → Edit $CHANGELOG to fill in the release notes before pushing."
+echo "  → Edit $CHANGELOG to fill in the release notes first, then run:"
 echo ""
-
-# ── Commit and tag ────────────────────────────────────────────────────────────
-
-git add "$PLUGIN_JSON" "$CHANGELOG"
-git commit -m "chore: release v$NEW_VERSION"
-git tag "v$NEW_VERSION"
-
-echo "Created commit and tag v$NEW_VERSION."
+echo "  .ci/bump-version.sh --commit $NEW_VERSION"
 echo ""
-echo "When ready, push with:"
-echo "  git push origin main --tags"
