@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `docs/contributing/releasing.md` — new dedicated contributor guide covering prerequisites, Phase 1/2 bump workflow, MR-based release steps, and troubleshooting
+- `development` skill — Phase 3 worktree setup now resolves the agent's git identity from the repository host API (`GET /user`) and sets `user.name` / `user.email` scoped to the worktree; remote URL is rewritten to embed the agent's token (`oauth2:<TOKEN>@<host>`) so `git push` authenticates without system credential helpers. Branches on host type (GitLab, GitHub, Gitea) with the correct auth header and API endpoint per host. Phase 4 and Phase 6 push steps updated to note that the authenticated remote is already configured.
 
 ### Changed
 
