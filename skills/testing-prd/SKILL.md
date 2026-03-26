@@ -40,29 +40,7 @@ Before running this skill, ensure the following are in place:
 
 ## Environment Setup
 
-### Project Context
-
-Read `.claude/project-config/PROJECT.md` for full architecture, repo layout, tech stacks, and conventions. This is your source of truth.
-
-### Repository Locations
-
-Read the **Repository Locations** section of `.claude/project-config/PROJECT.md` for all repo names, local paths, and project paths.
-
-### Trunk Branch
-
-`origin/main` is the trunk branch for all repositories. Before starting any new task (including the first test cycle), fetch the latest state of `main` and create feature branches from it:
-
-```bash
-git fetch origin
-```
-
-All feature branches must be based on `origin/main`. Never branch from a stale local `main` or from another feature branch.
-
-### Repository Host Configuration
-
-Read the **Source Control** section of `.claude/project-config/PROJECT.md` for the repository host instance URL, the configured group/org, API base, and credential loading instructions.
-
-> **URL-encode project identifiers** — e.g., `<GROUP>/my-repo` becomes `<GROUP>%2Fmy-repo` (where applicable for the repository host).
+Read `../../shared/environment-setup.md` and `../../shared/trunk-branch.md`.
 
 ### Container Registry Configuration
 
@@ -264,63 +242,33 @@ browser_navigate → browser_snapshot → browser_fill_form / browser_click → 
 
 ### Phase 3: Bug Triage & Fix Cycle
 
-**Entry condition:** Phase 2 complete with at least one FAIL.
-**Exit condition:** All FAILs have a CR or are classified as WONTFIX (with user approval).
+Read `../../shared/testing-phases.md` for Phase 3 (Bug Triage & Fix Cycle) and Phase 4 (CI Pipeline & Merge Cycle) workflow details. For this skill, the next cycle starting phase is **Phase 0** (re-read PRDs, regenerate matrix, then run startup sequence).
 
-For each FAIL:
-
-1. **Diagnose** — Read logs (`docker logs <container> --tail 200`), check config, trace the error
-2. **Classify severity:**
-   - **critical** — Service won't start, data corruption risk, security issue
-   - **high** — Feature broken but service runs
-   - **medium** — Degraded behavior, workaround exists
-   - **low** — Cosmetic, non-functional
-3. **Propose fix** — Describe the root cause and proposed fix approach
-4. **Discuss with user** — Present diagnosis and proposed approach; wait for user approval
-5. **Delegate to sub-agent** — Send the fix task (see Sub-Agent Delegation below)
-6. **Validate** — Apply the fix locally and re-run the specific failing check
-7. **Create CR** — Push branch and create change request via the repository host API
-
----
+**PRD-specific addition to Bug Reports:** Include **PRD Source:** {prd_source} after the **Severity:** field when creating bug reports for PRD-driven failures.
 
 ### Phase 4: CI Pipeline & Merge Cycle
 
-**Entry condition:** All CRs created in Phase 3.
-**Exit condition:** All CRs merged (user-approved) and new images deployed.
+See `../../shared/testing-phases.md`.
 
-1. **Monitor CI pipelines** — Poll pipeline status for each CR
-2. **Fix CI failures** — If a pipeline fails, fetch job logs, diagnose, push a fix commit
-3. **Notify user** — Report pipeline status and request merge approval
-4. **Wait for merge** — User merges approved CRs
-5. **Remove worktrees** — After each CR is created, remove its worktree:
-   ```bash
-   git -C <REPO_LOCAL_PATH> worktree remove \
-     <WORKTREES_BASE>/fix/{check_id}-{short_description}/{repo_name}
-   ```
-6. **Tear down stack** — `docker compose --profile app down -v`
-7. **Pull new images** — After merge, wait for registry build, then `docker compose --profile app pull`
-8. **Begin next cycle** — Return to Phase 0 (re-read PRDs, regenerate matrix, run full startup sequence)
+**PRD-specific addition to CR Descriptions:** Include a `## PRD Traceability` section after `## Root Cause`:
+
+```markdown
+## PRD Traceability
+Fixes requirement: {prd_source}
+```
 
 ---
 
 ## Error Handling
 
+Read `../../shared/testing-error-handling.md`.
+
+Additional error handling for PRD-driven testing:
+
 | Scenario | Recovery |
 |----------|----------|
-| Service won't start (exit code != 0) | `docker logs <container> --tail 100`, check config in `.env`, check image exists |
-| Migration fails | Read migration SQL, check postgres schema state, fix migration or seed data |
-| gRPC connection refused | Verify the relevant service container is healthy, check port 50051 is exposed, check the gRPC address env var |
-| Local AI/ML model pull fails | Check disk space (`df -h`), try a smaller model, verify network connectivity |
-| AI model proxy can't reach model server | Verify both containers share the same Docker network, check the API base URL in the proxy config matches the model server container name |
-| Redis AUTH failed | Compare `REDIS_PASSWORD` in `.env` with docker compose command |
-| PostgreSQL permission denied | Check `postgres-init.sql` created read-only role, verify `POSTGRES_READONLY_PASSWORD` matches |
-| UI returns 502/503 | Check gateway is healthy first, then check nginx config in UI container |
-| Docker build fails | Check Dockerfile, ensure multi-stage build context has all required files |
-| Playwright browser fails to launch | Verify Chromium installed: `npx playwright install --with-deps chromium`. Check `/tmp` has space (`df -h /tmp`). If sandbox errors occur, ensure running as non-root user `vscode`. |
 | PRD file not found | Log a warning, skip extraction for that file, note in matrix generation summary. Do not abort the cycle. |
 | PRD file contains ambiguous acceptance criterion | Generate the test using the most conservative interpretation; note the ambiguity in the check's Notes field |
-
-Container names used in log/health commands are the service containers defined in `.claude/project-config/TEST-MATRIX.md`. Substitute `<SERVICE_CONTAINER>` with the actual container name for the service being diagnosed.
 
 ---
 
@@ -353,11 +301,7 @@ When delegating a fix, read `../../shared/sub-agents/bug-fix.md` and dispatch vi
 
 ## Repository Host API
 
-Read `.claude/project-config/PROJECT.md § Source Control` to determine the repository host (GitLab, GitHub, or Gitea), then invoke the corresponding skill:
-
-- GitLab → `project-workflows:gitlab-api`
-- GitHub → `project-workflows:github-api`
-- Gitea → `project-workflows:gitea-api`
+Read `../../shared/api-dispatch.md`.
 
 **Operations used by this skill:**
 - `CREATE_CR` — create a change request after tests pass
@@ -430,44 +374,18 @@ After completing Phases 1–2, output this table. The PRD Source column is requi
 
 ### Bug Report (for each FAIL)
 
-```markdown
-### Bug: {check_id} — {short_title}
-
-**Severity:** {critical | high | medium | low}
-**PRD Source:** {prd_source}
-**Service:** {service_name}
-**Symptom:** {what the user would observe}
-**Root cause:** {technical explanation}
-**Proposed fix:** {what needs to change and where}
-**Files to modify:** {list of file paths}
-```
+Read `../../shared/testing-templates.md` for the base Bug Report template. Add **PRD Source:** {prd_source} after the **Severity:** field for PRD-driven failures.
 
 ### CR Description Template
 
-```markdown
-## Summary
-Fix {check_id}: {one-line description}
+Read `../../shared/testing-templates.md` for the base CR Description template. Add the following section after `## Root Cause`:
 
+```markdown
 ## PRD Traceability
 Fixes requirement: {prd_source}
-
-## Root Cause
-{technical explanation of what was wrong}
-
-## Changes
-- {bullet per file changed with brief description}
-
-## Testing
-- [ ] Re-ran check {check_id} — now PASS
-- [ ] Lint passes
-- [ ] Unit tests pass
-- [ ] No regressions in related checks
-
-## Related
-- Test cycle: #{n}
-- Check ID: {check_id}
-- PRD Source: {prd_source}
 ```
+
+Also add `- PRD Source: {prd_source}` to the `## Related` section.
 
 ---
 

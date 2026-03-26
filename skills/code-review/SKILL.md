@@ -36,11 +36,9 @@ Before running this skill, ensure the following are in place:
 
 ## Environment Setup
 
-### Project Context
+Read `../../shared/environment-setup.md`.
 
-Read `.claude/project-config/PROJECT.md` for full architecture, repo layout, tech stacks, and conventions. This is your source of truth for what "correct" looks like in each repo.
-
-### Repository Host Configuration
+### Review Token
 
 Read the **Source Control** section of `.claude/project-config/PROJECT.md` for:
 - `<API_TOKEN_ENV_VAR>` and `<REVIEW_TOKEN_ENV_VAR>` names
@@ -58,19 +56,11 @@ source <ENV_FILE_PATH>
 - If `REVIEW_TOKEN_ENV_VAR` is not set or is empty, fall back to `API_TOKEN_ENV_VAR`.
 - Never use the project owner's personal credentials.
 
-### Repos in Scope
-
-Read the **Repository Locations** section of `.claude/project-config/PROJECT.md` for the full list of repos, their languages, and project paths.
-
 ---
 
 ## Repository Host API
 
-Read `.claude/project-config/PROJECT.md § Source Control` to determine the repository host (GitLab, GitHub, or Gitea), then invoke the corresponding API reference skill:
-
-- GitLab → invoke `project-workflows:gitlab-api`
-- GitHub → invoke `project-workflows:github-api`
-- Gitea → invoke `project-workflows:gitea-api`
+Read `../../shared/api-dispatch.md`.
 
 All API calls in this skill use the following **standardized operation names**. Look up each operation in the invoked API skill for the exact curl command.
 
