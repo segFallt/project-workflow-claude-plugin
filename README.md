@@ -30,7 +30,7 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 
 1. Register the marketplace directly from the git repository:
    ```bash
-   claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
+   claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin.git
    ```
 
 2. Install the plugin (project scope recommended):
@@ -86,13 +86,13 @@ This plugin uses [Semantic Versioning](https://semver.org/). Releases are tagged
 The standard install uses the git repository URL directly and pulls the latest `main`:
 
 ```bash
-claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
+claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin.git
 ```
 
 To pin to a specific tagged release, clone at the desired tag and register using `$HOME` or a full `/absolute/path`:
 
 ```bash
-git clone --branch v1.0.0 https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git $HOME/project-workflow-claude-plugin
+git clone --branch v1.0.0 https://github.com/segFallt/project-workflow-claude-plugin.git $HOME/project-workflow-claude-plugin
 claude plugin marketplace add $HOME/project-workflow-claude-plugin
 ```
 
@@ -105,7 +105,7 @@ claude plugin marketplace add $HOME/project-workflow-claude-plugin
 Claude Code pulls marketplace updates automatically at the start of each session. To force an immediate update, re-run the original `marketplace add` command — it will refresh the local clone:
 
 ```bash
-claude plugin marketplace add https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin.git
+claude plugin marketplace add https://github.com/segFallt/project-workflow-claude-plugin.git
 ```
 
 If your version of Claude Code includes the `update` subcommand, you can also use it as a shorthand:
@@ -127,7 +127,7 @@ git -C $HOME/project-workflow-claude-plugin checkout v1.0.0
 
 ### Release history
 
-All releases are listed on the [GitLab Releases page](https://gitlab.n3.pingleberry.com/code-agent-workspace/project-workflow-claude-plugin/-/releases). See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
+All releases are listed on the [GitHub Releases page](https://github.com/segFallt/project-workflow-claude-plugin/releases). See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 ### Creating a release (maintainers)
 
