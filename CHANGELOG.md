@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `skills/development/sub-agents/code-exploration.md` — replaced by `shared/sub-agents/code-exploration.md`
 - `skills/issue-creation/sub-agents/code-exploration.md` — replaced by `shared/sub-agents/code-exploration.md`
 
+### Fixed
+
+- GitHub Release creation now works correctly after auto-tag pushes: `auto-tag.yml` inlines the full release process (`gh release create`) directly after pushing the version tag, working around the GitHub Actions restriction that prevents `GITHUB_TOKEN` tag pushes from triggering downstream workflows. `release.yml` has been removed as it was unreachable via the normal release path and risked creating duplicate releases on manual tag pushes.
+
 ## [1.0.4] - 2026-03-26
 
 ### Added
