@@ -86,10 +86,6 @@ GET <INSTANCE_URL>/api/v1/repos/<OWNER>/my-service/issues
 
 List all open pull requests for a repository.
 
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls?state=open&limit=50
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -106,10 +102,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 
 Get pull request details.
 
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -123,10 +115,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 3. GET_CR_DIFF
 
 Get PR changed files with patch data.
-
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/files?limit=100
-```
 
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -143,10 +131,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 4. CREATE_CR
 
 Create a new pull request.
-
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls
-```
 
 ```bash
 curl -s -X POST \
@@ -170,10 +154,6 @@ curl -s -X POST \
 
 Approve a pull request by submitting a review with `APPROVED` event.
 
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews
-```
-
 ```bash
 curl -s -X POST \
   -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -194,10 +174,6 @@ curl -s -X POST \
 > **Limitation:** Gitea does not have a dedicated "unapprove" or "dismiss review" endpoint in the REST API. To effectively override a previous approval, submit a new review with a different event.
 
 **Workaround — submit a new review with `REQUEST_CHANGES`:**
-
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews
-```
 
 ```bash
 curl -s -X POST \
@@ -221,10 +197,6 @@ curl -s -X POST \
 
 Merge a pull request.
 
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/merge
-```
-
 ```bash
 curl -s -X POST \
   -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -246,10 +218,6 @@ curl -s -X POST \
 
 Post a general comment on a pull request. In Gitea, PRs are also issues, so general comments use the issues endpoint.
 
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}/comments
-```
-
 ```bash
 curl -s -X POST \
   -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -268,10 +236,6 @@ curl -s -X POST \
 ### 9. POST_CR_INLINE_COMMENT
 
 Post inline review comments on specific lines in the diff. Gitea requires submitting a review with a `comments` array.
-
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews
-```
 
 ```bash
 curl -s -X POST \
@@ -311,10 +275,6 @@ See the **Inline Comment Position Object** section below for full details on pos
 Get all comments on a pull request. Gitea stores general comments and inline review comments in separate endpoints — query both.
 
 **General comments (issue comments):**
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}/comments
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -322,10 +282,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ```
 
 **Inline review comments (per review):**
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews/{review_id}/comments
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -370,10 +326,6 @@ echo "$PR_BODY" | grep -oiE '(closes|fixes|resolves)\s+#[0-9]+' | grep -oE '#[0-
 Get CI status for a pull request's head commit.
 
 **Commit statuses (external CI or Gitea Actions):**
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/statuses/{sha}
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -385,10 +337,6 @@ Obtain `{head_sha}` from `GET_CR` response field `head.sha`.
 **Key response fields:** Array of status objects, each with `id`, `state` (`pending`, `success`, `error`, `failure`, `warning`), `description`, `target_url`, `context`, `created_at`.
 
 **Alternative — Gitea Actions tasks:**
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/actions/tasks
-```
-
 > **Note:** Commit statuses are posted by CI systems (including Gitea Actions). The `context` field identifies which CI pipeline the status belongs to. Use the combined status endpoint for a summary: `GET /api/v1/repos/<OWNER>/{repo_name}/commits/{sha}/status`.
 
 ---
@@ -396,10 +344,6 @@ GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/actions/tasks
 ### 14. GET_PIPELINE_JOBS
 
 List jobs in a Gitea Actions workflow run.
-
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/actions/runs/{run_id}/jobs
-```
 
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -416,10 +360,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 15. GET_JOB_LOG
 
 Get log output for a Gitea Actions workflow run.
-
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/actions/runs/{run_id}/logs
-```
 
 ```bash
 curl -s -L -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -446,10 +386,6 @@ cat /tmp/job_logs/*.txt
 
 Get issue details.
 
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -465,10 +401,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 17. CREATE_ISSUE
 
 Create a new issue.
-
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues
-```
 
 ```bash
 curl -s -X POST \
@@ -494,10 +426,6 @@ curl -s -X POST \
 
 Close an issue.
 
-```
-PATCH <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}
-```
-
 ```bash
 curl -s -X PATCH \
   -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -515,10 +443,6 @@ curl -s -X PATCH \
 
 List available labels for a repository.
 
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/labels?limit=50
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -534,10 +458,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 20. LIST_GROUP_LABELS
 
 List organization-level labels.
-
-```
-GET <INSTANCE_URL>/api/v1/orgs/{org}/labels?limit=50
-```
 
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -555,10 +475,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 
 List active milestones for a repository.
 
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/milestones?state=open&limit=50
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -572,10 +488,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 22. SEARCH_BRANCHES
 
 Search for branches matching a pattern.
-
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/branches?q={query}&limit=50
-```
 
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
@@ -592,10 +504,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 23. POST_ISSUE_COMMENT
 
 Post a comment on an issue. Uses the same endpoint as `POST_CR_COMMENT` since PRs are issues in Gitea.
-
-```
-POST <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}/comments
-```
 
 ```bash
 curl -s -X POST \
@@ -654,10 +562,6 @@ curl -s -X POST \
 
 Get all reviews (with their comments) on a pull request.
 
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -667,10 +571,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 **Key response fields:** Array of review objects, each with `id`, `body`, `state` (`APPROVED`, `REQUEST_CHANGES`, `COMMENT`), `user`, `html_url`, `submitted_at`.
 
 **To get inline comments for a specific review:**
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews/{review_id}/comments
-```
-
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
@@ -686,10 +586,6 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 ### 26. SEARCH_ISSUES
 
 Search for issues by keyword.
-
-```
-GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues?type=issues&state=open&q={query}&limit=50
-```
 
 ```bash
 curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \

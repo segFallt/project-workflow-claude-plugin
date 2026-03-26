@@ -77,10 +77,6 @@ GET <API_BASE_URL>/api/v4/projects/42/merge_requests
 
 List all open merge requests for the group.
 
-```
-GET <API_BASE_URL>/api/v4/groups/<GROUP>/merge_requests?state=opened&per_page=100
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/groups/<GROUP>/merge_requests?state=opened&per_page=100"
@@ -93,10 +89,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 2. GET_CR
 
 Get merge request details, including `diff_refs`.
-
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}
-```
 
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -111,10 +103,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 Get MR changes (full diff).
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/changes
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/changes"
@@ -127,10 +115,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 4. CREATE_CR
 
 Create a new merge request.
-
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests
-```
 
 ```bash
 curl -s -X POST \
@@ -154,10 +138,6 @@ curl -s -X POST \
 
 Approve a merge request.
 
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/approve
-```
-
 ```bash
 curl -s -X POST \
   -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -171,10 +151,6 @@ curl -s -X POST \
 ### 6. UNAPPROVE_CR
 
 Remove approval from a merge request.
-
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/unapprove
-```
 
 ```bash
 curl -s -X POST \
@@ -190,10 +166,6 @@ curl -s -X POST \
 
 Merge a merge request.
 
-```
-PUT <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/merge
-```
-
 ```bash
 curl -s -X PUT \
   -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -207,10 +179,6 @@ curl -s -X PUT \
 ### 8. POST_CR_COMMENT
 
 Post a general comment (note) on a merge request.
-
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/notes
-```
 
 ```bash
 curl -s -X POST \
@@ -227,10 +195,6 @@ curl -s -X POST \
 ### 9. POST_CR_INLINE_COMMENT
 
 Post an inline discussion thread on a specific line in the diff.
-
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/discussions
-```
 
 ```bash
 curl -s -X POST \
@@ -261,10 +225,6 @@ See the **Inline Comment Position Object** section below for full details on the
 
 Resolve a discussion thread.
 
-```
-PUT <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/discussions/{discussion_id}
-```
-
 ```bash
 curl -s -X PUT \
   -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -281,10 +241,6 @@ curl -s -X PUT \
 
 List all notes (comments) on a merge request.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/notes?per_page=100
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/notes?per_page=100"
@@ -297,10 +253,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 12. GET_CR_LINKED_ISSUES
 
 Get issues that will be closed when the MR is merged.
-
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/closes_issues
-```
 
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -315,10 +267,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 Get pipeline status for a merge request.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/pipelines
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/pipelines"
@@ -331,10 +279,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 14. GET_PIPELINE_JOBS
 
 List all jobs in a pipeline.
-
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/pipelines/{pipeline_id}/jobs
-```
 
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -349,10 +293,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 Get raw log output for a job.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/jobs/{job_id}/trace
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/jobs/{job_id}/trace"
@@ -366,10 +306,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 Get issue details.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}"
@@ -382,10 +318,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 17. CREATE_ISSUE
 
 Create a new issue.
-
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues
-```
 
 ```bash
 curl -s -X POST \
@@ -408,10 +340,6 @@ curl -s -X POST \
 
 Close an issue.
 
-```
-PUT <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}
-```
-
 ```bash
 curl -s -X PUT \
   -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -428,10 +356,6 @@ curl -s -X PUT \
 
 List available labels for a project.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/labels
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/labels"
@@ -444,10 +368,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 20. LIST_GROUP_LABELS
 
 List group-level labels that apply across all repos in the group.
-
-```
-GET <API_BASE_URL>/api/v4/groups/<GROUP>/labels
-```
 
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -462,10 +382,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 List active milestones for a project.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/milestones?state=active
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/milestones?state=active"
@@ -479,10 +395,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 
 Search for branches matching a query.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/repository/branches?search={query}
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/repository/branches?search={query}"
@@ -495,10 +407,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 23. POST_ISSUE_COMMENT
 
 Post a comment (note) on an issue.
-
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}/notes
-```
 
 ```bash
 curl -s -X POST \
@@ -516,10 +424,6 @@ curl -s -X POST \
 
 Reply to an existing discussion thread on a merge request.
 
-```
-POST <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/discussions/{discussion_id}/notes
-```
-
 ```bash
 curl -s -X POST \
   -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
@@ -536,10 +440,6 @@ curl -s -X POST \
 
 List all threaded discussions on a merge request.
 
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/discussions?per_page=100
-```
-
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/discussions?per_page=100"
@@ -552,10 +452,6 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ### 26. SEARCH_ISSUES
 
 Search for issues by keyword.
-
-```
-GET <API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues?state=opened&search={query}
-```
 
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `shared/environment-setup.md`, `shared/trunk-branch.md`, `shared/api-dispatch.md` — shared partials replacing duplicated environment-setup, trunk-branch, and API-dispatch blocks across all 5 action skills
+- `shared/testing-error-handling.md`, `shared/testing-phases.md`, `shared/testing-templates.md` — shared partials replacing duplicated Phase 3/4 workflow, error-handling table, and Bug Report/CR Description templates across both testing skills
+- `shared/sub-agents/code-exploration.md` — parameterized consolidation of `skills/development/sub-agents/code-exploration.md` and `skills/issue-creation/sub-agents/code-exploration.md`; `{purpose}` placeholder (`"design"` or `"issue-context"`) switches the output schema
+
+### Changed
+
+- All 5 action skills (`development`, `code-review`, `issue-creation`, `testing-static`, `testing-prd`) updated to reference shared partials via `Read ../../shared/{file}.md` instead of embedding duplicate content inline
+- `skills/gitlab-api/SKILL.md`, `skills/github-api/SKILL.md`, `skills/gitea-api/SKILL.md` — redundant standalone endpoint code blocks removed from all operations (curl examples already contain the endpoint URL)
+
+### Removed
+
+- `skills/development/sub-agents/code-exploration.md` — replaced by `shared/sub-agents/code-exploration.md`
+- `skills/issue-creation/sub-agents/code-exploration.md` — replaced by `shared/sub-agents/code-exploration.md`
+
 ## [1.0.4] - 2026-03-26
 
 ### Added
