@@ -131,31 +131,4 @@ All releases are listed on the [GitLab Releases page](https://gitlab.n3.pinglebe
 
 ### Creating a release (maintainers)
 
-The release process is split into two phases.
-
-**Phase 1 — Bump version and prepare changelog:**
-
-```bash
-.ci/bump-version.sh patch   # 1.0.0 → 1.0.1
-.ci/bump-version.sh minor   # 1.0.0 → 1.1.0
-.ci/bump-version.sh major   # 1.0.0 → 2.0.0
-.ci/bump-version.sh 2.5.0   # explicit version
-```
-
-This updates `plugin.json` and prepends a changelog template section. Edit `CHANGELOG.md` to fill in the release notes.
-
-**Phase 2 — Validate and commit once the changelog is filled in:**
-
-```bash
-.ci/bump-version.sh --commit <x.y.z>
-```
-
-This validates that the changelog entry has no unfilled placeholder lines, then commits and tags.
-
-Finally push:
-
-```bash
-git push origin main --tags
-```
-
-CI will validate that the tag matches `plugin.json` and create a GitLab and GitHub Release automatically.
+See [docs/contributing/releasing.md](docs/contributing/releasing.md) for the full release process.

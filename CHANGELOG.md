@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `docs/contributing/releasing.md` — new dedicated contributor guide covering prerequisites, Phase 1/2 bump workflow, MR-based release steps, and troubleshooting
+
+### Changed
+
+- Release workflow now uses CI-automated tag creation (`auto-tag` job on both GitLab CI and GitHub Actions) instead of `git push origin main --tags`; maintainers open a release MR and CI creates the tag on both hosts on merge
+- `bump-version.sh` Phase 2 no longer creates a local git tag; printed instructions updated to reflect MR-first workflow
+- `README.md` "Creating a release" section replaced with a pointer to `docs/contributing/releasing.md`
+
 ## [1.0.3] - 2026-03-25
 
 ### Changed

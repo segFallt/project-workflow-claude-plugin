@@ -46,6 +46,38 @@ smoke-test:
         - shared/**/*
         - .ci/smoke-test.sh
 
+auto-tag:
+  stage: validate
+  image: alpine:latest
+  needs:
+    - job: validate-plugin
+      optional: true
+    - job: validate-frontmatter
+      optional: true
+    - job: smoke-test
+      optional: true
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - |
+      VERSION=$(cat .claude-plugin/plugin.json | jq -r '.version')
+      TAG="v${VERSION}"
+      EXISTS=$(curl -s --header "PRIVATE-TOKEN: $RELEASE_TOKEN" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/tags/${TAG}" | jq -r '.name // empty')
+      if [ -n "$EXISTS" ]; then
+        echo "Tag $TAG already exists — skipping auto-tag"
+        exit 0
+      fi
+      curl --fail -X POST --header "PRIVATE-TOKEN: $RELEASE_TOKEN" \
+        --header "Content-Type: application/json" \
+        --data "{\"tag_name\": \"$TAG\", \"ref\": \"$CI_COMMIT_SHA\"}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/tags"
+      echo "Created tag $TAG"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - .claude-plugin/plugin.json
+
 validate-version:
   stage: validate
   image: node:lts
