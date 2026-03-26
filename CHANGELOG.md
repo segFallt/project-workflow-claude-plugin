@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `shared/memory-cache.md` — new shared file defining the memory-based caching protocol for all `.claude/project-config/` files. Specifies cache entry naming, entry format, read-through protocol (with `pw-version` stamp comparison for automatic invalidation), write protocol, graceful fallback, and per-skill caching table.
+- Memory-cache read-through protocol applied in `shared/environment-setup.md` (for `PROJECT.md`), `skills/code-review/SKILL.md` (for `REVIEW-CRITERIA.md`), `skills/testing-static/SKILL.md` (for `TEST-MATRIX.md`), and `skills/testing-prd/SKILL.md` (for `TEST-MATRIX.md` and `PRD-MANIFEST.md`) — skills check project memory before reading config files from disk, skipping the full read on cache hits.
+- Memory cache write instructions added to `skills/init/SKILL.md` — after generating or updating any config file, `init` immediately writes/overwrites the corresponding memory entry so subsequent invocations get an immediate cache hit.
+- Memory-cache check instructions added to all 7 sub-agent prompt files (`code-exploration`, `bug-fix`, `implementation`, `review-feedback`, `test-writing`, `initial-review`, `re-review`) — sub-agents check project memory for `project-config-PROJECT` before reading it from disk.
+
 ## [1.1.0] - 2026-03-26
 
 ### Added
