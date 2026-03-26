@@ -41,6 +41,15 @@ Before running this skill, ensure the following are in place:
 
 Read `../../shared/environment-setup.md` and `../../shared/trunk-branch.md`.
 
+### Config File Caching
+
+For `.claude/project-config/TEST-MATRIX.md`, apply the Read-Through Protocol from `../../shared/memory-cache.md` before reading it:
+
+1. Check memory for `project-config-TEST-MATRIX`.
+2. If found, compare the stored `**pw-version:**` with line 1 of the file. Match → use memory content. Mismatch → read full file, refresh memory entry.
+3. If not found → read the full file, write a new memory entry.
+4. If memory unavailable → read the file directly.
+
 ### Container Registry Configuration
 
 Read the **Container Registry** subsection of `PROJECT.md § Source Control` for the registry image variable names and login command. Set these variables in the deploy repo's `.env` before starting the stack. CI also pushes a `:commit-sha` tag alongside `:latest` — use the SHA tag to pin a specific build.
