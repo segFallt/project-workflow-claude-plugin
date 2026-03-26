@@ -123,6 +123,69 @@ Read `.claude/project-config/PROJECT.md § Source Control` to determine the repo
 ### Phase 3: Implementation
 
 1. **For each affected repo**, create an isolated git worktree per `PROJECT.md § Concurrent Session Isolation`. Use the repo's local path from `PROJECT.md § Repository Locations` and the branch naming convention below. All subsequent file edits, builds, tests, and git operations for this session use the worktree path, not the main clone.
+
+   Immediately after creating each worktree, run the following **Worktree Identity & Remote Setup** block. Read the host type, host URL, API base, `GROUP`, and `REPO` from `PROJECT.md § Source Control` and `PROJECT.md § Repository Locations`. `API_TOKEN` is the value loaded from `API_TOKEN_ENV_VAR` in the credential file. Branch on host type:
+
+   **GitLab:**
+   ```bash
+   # Resolve agent identity from the GitLab API
+   AGENT_USER=$(curl -s -H "PRIVATE-TOKEN: ${API_TOKEN}" \
+     "${GITLAB_API_BASE}/user")
+   GIT_USER_NAME=$(echo "$AGENT_USER" | python3 -c \
+     "import sys,json; u=json.load(sys.stdin); print(u['name'])")
+   GIT_USER_EMAIL=$(echo "$AGENT_USER" | python3 -c \
+     "import sys,json; u=json.load(sys.stdin); \
+   print(u.get('commit_email') or u.get('email') or u['username']+'@users.noreply.${GITLAB_HOST}')")
+
+   # Set identity scoped to this worktree only (does not affect global git config)
+   git -C <WORKTREE_PATH> config user.name  "$GIT_USER_NAME"
+   git -C <WORKTREE_PATH> config user.email "$GIT_USER_EMAIL"
+
+   # Embed token in remote URL so git push authenticates without system credential helpers
+   git -C <WORKTREE_PATH> remote set-url origin \
+     "https://oauth2:${API_TOKEN}@${GITLAB_HOST}/${GROUP}/${REPO}.git"
+   ```
+
+   **GitHub:**
+   ```bash
+   # Resolve agent identity from the GitHub API
+   AGENT_USER=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" \
+     "${GITHUB_API_BASE}/user")
+   GIT_USER_NAME=$(echo "$AGENT_USER" | python3 -c \
+     "import sys,json; u=json.load(sys.stdin); print(u['name'] or u['login'])")
+   GIT_USER_EMAIL=$(echo "$AGENT_USER" | python3 -c \
+     "import sys,json; u=json.load(sys.stdin); \
+   print(u.get('email') or str(u['id'])+'+'+u['login']+'@users.noreply.${GITHUB_HOST#*://}')")
+
+   # Set identity scoped to this worktree only (does not affect global git config)
+   git -C <WORKTREE_PATH> config user.name  "$GIT_USER_NAME"
+   git -C <WORKTREE_PATH> config user.email "$GIT_USER_EMAIL"
+
+   # Embed token in remote URL so git push authenticates without system credential helpers
+   git -C <WORKTREE_PATH> remote set-url origin \
+     "https://oauth2:${API_TOKEN}@${GITHUB_HOST#*://}/${GROUP}/${REPO}.git"
+   ```
+
+   **Gitea:**
+   ```bash
+   # Resolve agent identity from the Gitea API
+   AGENT_USER=$(curl -s -H "Authorization: token ${API_TOKEN}" \
+     "${GITEA_HOST}/api/v1/user")
+   GIT_USER_NAME=$(echo "$AGENT_USER" | python3 -c \
+     "import sys,json; u=json.load(sys.stdin); print(u['full_name'] or u['login'])")
+   GIT_USER_EMAIL=$(echo "$AGENT_USER" | python3 -c \
+     "import sys,json; u=json.load(sys.stdin); \
+   print(u.get('email') or u['login']+'@noreply.${GITEA_HOST#*://}')")
+
+   # Set identity scoped to this worktree only (does not affect global git config)
+   git -C <WORKTREE_PATH> config user.name  "$GIT_USER_NAME"
+   git -C <WORKTREE_PATH> config user.email "$GIT_USER_EMAIL"
+
+   # Embed token in remote URL so git push authenticates without system credential helpers
+   git -C <WORKTREE_PATH> remote set-url origin \
+     "https://oauth2:${API_TOKEN}@${GITEA_HOST#*://}/${GROUP}/${REPO}.git"
+   ```
+
 2. **For multi-repo changes**, implement in the dependency order defined in `PROJECT.md § Repository Dependency Order`
 3. **Delegate implementation** — read `./sub-agents/implementation.md` and dispatch via the Agent tool per logical unit
    - One sub-agent per repo is the recommended unit of delegation
@@ -139,9 +202,9 @@ Read `.claude/project-config/PROJECT.md § Source Control` to determine the repo
 
 ### Phase 4: Change Request Creation
 
-1. **Push the branch** (from inside the worktree):
+1. **Push the branch** (from inside the worktree). The `origin` remote already uses the token-authenticated URL set during the Phase 3 worktree setup — no additional credential configuration is needed:
    ```bash
-   cd <WORKTREES_BASE>/{branch_name}/{repo_name}
+   cd <WORKTREE_PATH>
    git push -u origin {branch_name}
    ```
 2. **Create the CR** via `CREATE_CR` using the CR Description template
@@ -200,7 +263,7 @@ Read `.claude/project-config/PROJECT.md § Source Control` to determine the repo
       git add {specific files changed}
       git commit -m "fix: address review feedback round {review_round} (#{issue_id})"
       ```
-   h. Push the changes:
+   h. Push the changes. The `origin` remote already uses the token-authenticated URL set during the Phase 3 worktree setup:
       ```bash
       git push origin {branch_name}
       ```

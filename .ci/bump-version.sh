@@ -15,9 +15,11 @@
 #
 #   Verifies plugin.json is already at <x.y.z>, checks that the CHANGELOG
 #   entry for [<x.y.z>] has no unfilled placeholder lines (bare "-"), then
-#   runs git add, git commit, and git tag. Prints push instructions.
+#   runs git add and git commit. Prints MR instructions.
 #
-# The script does NOT push — it prints push instructions at the end.
+#   CI creates the version tag automatically when the MR is merged to main.
+#
+# The script does NOT push — it prints MR instructions at the end.
 
 set -eu
 
@@ -72,12 +74,6 @@ if [ "$BUMP_ARG" = "--commit" ]; then
     exit 1
   fi
 
-  # Guard against duplicate tags
-  if git rev-parse "v$COMMIT_VERSION" > /dev/null 2>&1; then
-    echo "ERROR: Tag v$COMMIT_VERSION already exists locally or has been fetched"
-    exit 1
-  fi
-
   # Extract top CHANGELOG entry for ## [<version>] and count bare placeholder lines
   PLACEHOLDER_COUNT=$(awk \
     '/^## \['"$COMMIT_VERSION"'\]/{found=1; next} /^## \[/ && found{exit} found && /^-$/{count++} END{print count+0}' \
@@ -89,15 +85,18 @@ if [ "$BUMP_ARG" = "--commit" ]; then
     exit 1
   fi
 
-  # Commit and tag
+  # Commit (CI owns tag creation on merge to main)
   git add "$PLUGIN_JSON" "$CHANGELOG"
   git commit -m "chore: release v$COMMIT_VERSION"
-  git tag "v$COMMIT_VERSION"
 
-  echo "Created commit and tag v$COMMIT_VERSION."
+  echo "Created commit for v$COMMIT_VERSION."
   echo ""
-  echo "When ready, push with:"
-  echo "  git push origin main --tags"
+  echo "When ready, open an MR to main:"
+  echo ""
+  echo "  git push origin HEAD"
+  echo ""
+  echo "Then open a merge request targeting main. CI will create the v$COMMIT_VERSION"
+  echo "tag automatically once the MR is merged."
   exit 0
 fi
 
