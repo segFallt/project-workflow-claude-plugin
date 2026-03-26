@@ -35,29 +35,13 @@ Before running this skill, ensure the following are in place:
 
 ## Environment Setup
 
-### Project Context
-
-Read `.claude/project-config/PROJECT.md` for full architecture, repo layout, tech stacks, and conventions. This is your source of truth for understanding which service owns which concern.
-
-### Repository Host Configuration
-
-Read the **Source Control** section of `.claude/project-config/PROJECT.md` for the repository host instance URL, group/org name, API base URL, and credential loading instructions.
-
-> **URL-encode project identifiers** — e.g., `<GROUP>/my-repo` becomes `<GROUP>%2Fmy-repo` (where applicable for the repository host).
-
-### Repos in Scope
-
-Read the **Repository Locations** section of `.claude/project-config/PROJECT.md` for the full list of repos, their languages, and repository project identifiers.
+Read `../../shared/environment-setup.md`.
 
 ---
 
 ## Repository Host API
 
-Read `.claude/project-config/PROJECT.md § Source Control` to determine the repository host (GitLab, GitHub, or Gitea), then invoke the appropriate skill for all API interaction patterns:
-
-- GitLab → invoke `project-workflows:gitlab-api` skill
-- GitHub → invoke `project-workflows:github-api` skill
-- Gitea → invoke `project-workflows:gitea-api` skill
+Read `../../shared/api-dispatch.md`.
 
 **Operations used by this skill:**
 - `LIST_LABELS` — list project/repo labels
@@ -166,7 +150,7 @@ Fetch labels from the API before composing the issue. Only use labels that actua
 
 ### Code Exploration Sub-Agent
 
-Read `./sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting all `{placeholder}` values defined in that file.
+Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined in that file.
 
 ---
 

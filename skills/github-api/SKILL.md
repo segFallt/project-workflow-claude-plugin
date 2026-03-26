@@ -84,10 +84,6 @@ GET <INSTANCE_URL>/api/v3/repos/<OWNER>/my-service/pulls
 
 List all open pull requests for a repository.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/pulls?state=open&per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -105,10 +101,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 
 Get pull request details.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -124,10 +116,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 
 Get PR changed files with patch data.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/files?per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -142,10 +130,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ### 4. CREATE_CR
 
 Create a new pull request.
-
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/pulls
-```
 
 ```bash
 curl -s -X POST \
@@ -170,10 +154,6 @@ curl -s -X POST \
 
 Approve a pull request by submitting a review with `APPROVE` event.
 
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/reviews
-```
-
 ```bash
 curl -s -X POST \
   -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -195,10 +175,6 @@ curl -s -X POST \
 Dismiss a previous approval review. This is a two-step process: first find the review ID, then dismiss it.
 
 **Step 1 — List reviews to find the approval review ID:**
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/reviews
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -209,10 +185,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 Look for the review with `state: "APPROVED"` and note its `id`.
 
 **Step 2 — Dismiss the review:**
-```
-PUT https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/reviews/{review_id}/dismissals
-```
-
 ```bash
 curl -s -X PUT \
   -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -234,10 +206,6 @@ curl -s -X PUT \
 ### 7. MERGE_CR
 
 Merge a pull request.
-
-```
-PUT https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/merge
-```
 
 ```bash
 curl -s -X PUT \
@@ -261,10 +229,6 @@ curl -s -X PUT \
 
 Post a general comment on a pull request. In GitHub, PRs are also issues, so general comments use the issues endpoint.
 
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/issues/{pull_number}/comments
-```
-
 ```bash
 curl -s -X POST \
   -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -284,10 +248,6 @@ curl -s -X POST \
 ### 9. POST_CR_INLINE_COMMENT
 
 Post an inline review comment on a specific line in the diff.
-
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/comments
-```
 
 ```bash
 curl -s -X POST \
@@ -348,10 +308,6 @@ curl -s -X POST \
 Get all comments on a pull request. GitHub stores general comments and inline review comments in separate endpoints — query both.
 
 **General comments (issue comments):**
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/issues/{pull_number}/comments?per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -360,10 +316,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ```
 
 **Inline review comments:**
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/comments?per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -409,10 +361,6 @@ echo "$PR_BODY" | grep -oiE '(closes|fixes|resolves)\s+#[0-9]+' | grep -oE '#[0-
 
 Get CI check status for a pull request's head commit.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/commits/{ref}/check-runs?per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -432,10 +380,6 @@ Obtain `{head_sha}` from `GET_CR` response field `head.sha`.
 
 List jobs in a GitHub Actions workflow run.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/actions/runs/{run_id}/jobs
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -452,10 +396,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ### 15. GET_JOB_LOG
 
 Get raw log output for a workflow job.
-
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/actions/jobs/{job_id}/logs
-```
 
 ```bash
 curl -s -L -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -474,10 +414,6 @@ curl -s -L -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 
 Get issue details.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/issues/{issue_number}
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -494,10 +430,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ### 17. CREATE_ISSUE
 
 Create a new issue.
-
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/issues
-```
 
 ```bash
 curl -s -X POST \
@@ -524,10 +456,6 @@ curl -s -X POST \
 
 Close an issue.
 
-```
-PATCH https://api.github.com/repos/<OWNER>/{repo_name}/issues/{issue_number}
-```
-
 ```bash
 curl -s -X PATCH \
   -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -545,10 +473,6 @@ curl -s -X PATCH \
 ### 19. LIST_LABELS
 
 List available labels for a repository.
-
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/labels?per_page=100
-```
 
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -568,10 +492,6 @@ List organization-level labels. GitHub does not have native org-level labels in 
 > **Important:** GitHub does not natively support organization-wide labels. Labels are per-repository. The closest equivalent is to query a "template" repository's labels, or use the organization's `.github` repository if it exists.
 
 **Workaround — list labels from the org's `.github` repo:**
-```
-GET https://api.github.com/repos/<OWNER>/.github/labels?per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -589,10 +509,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 
 List active milestones for a repository.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/milestones?state=open&per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -609,10 +525,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ### 22. SEARCH_BRANCHES
 
 Search for branches matching a pattern.
-
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/branches?per_page=100
-```
 
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -635,10 +547,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 
 Post a comment on an issue. Uses the same endpoint as `POST_CR_COMMENT` since PRs are issues in GitHub.
 
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/issues/{issue_number}/comments
-```
-
 ```bash
 curl -s -X POST \
   -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
@@ -656,10 +564,6 @@ curl -s -X POST \
 ### 24. REPLY_TO_CR_THREAD
 
 Reply to an existing review comment thread on a pull request.
-
-```
-POST https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/comments/{comment_id}/replies
-```
 
 ```bash
 curl -s -X POST \
@@ -681,10 +585,6 @@ curl -s -X POST \
 
 Get all review comment threads on a pull request.
 
-```
-GET https://api.github.com/repos/<OWNER>/{repo_name}/pulls/{pull_number}/comments?per_page=100
-```
-
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/vnd.github+json" \
@@ -701,10 +601,6 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ### 26. SEARCH_ISSUES
 
 Search for issues by keyword.
-
-```
-GET https://api.github.com/search/issues?q={query}+repo:<OWNER>/{repo_name}+type:issue+state:open
-```
 
 ```bash
 curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \

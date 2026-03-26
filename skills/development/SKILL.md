@@ -38,39 +38,13 @@ Before running this skill, ensure the following are in place:
 
 ## Environment Setup
 
-### Project Context
-
-Read `.claude/project-config/PROJECT.md` for full architecture, repo layout, tech stacks, and conventions. This is your source of truth for what "correct" looks like in each repo.
-
-### Repository Locations
-
-Read the **Repository Locations** section of `.claude/project-config/PROJECT.md` for all repo names, local paths, and project paths.
-
-### Trunk Branch
-
-`origin/main` is the trunk branch for all repositories. Before starting any new task, fetch the latest state of `main` and create feature branches from it:
-
-```bash
-git fetch origin
-```
-
-All feature branches must be based on `origin/main`. Never branch from a stale local `main` or from another feature branch.
-
-### Repository Host Configuration
-
-Read the **Source Control** section of `.claude/project-config/PROJECT.md` for the repository host URL, group/org name, API base URL, and credential loading instructions.
-
-> **URL-encode project paths** where required by the host API — e.g., `<GROUP>/my-repo` becomes `<GROUP>%2Fmy-repo`.
+Read `../../shared/environment-setup.md` and `../../shared/trunk-branch.md`.
 
 ---
 
 ## Repository Host API
 
-Read `.claude/project-config/PROJECT.md § Source Control` to determine the repository host (GitLab, GitHub, or Gitea), then invoke the corresponding skill to load its API patterns:
-
-- GitLab → invoke `project-workflows:gitlab-api` skill
-- GitHub → invoke `project-workflows:github-api` skill
-- Gitea → invoke `project-workflows:gitea-api` skill
+Read `../../shared/api-dispatch.md`.
 
 **Operations used by this skill:**
 - `GET_ISSUE` — get issue details
@@ -98,17 +72,16 @@ Read `.claude/project-config/PROJECT.md § Source Control` to determine the repo
    - A short reference: `<repo-name>#42` or just `#42` with the repo implicit from context
 2. **Fetch the issue** via `GET_ISSUE`
 3. **Fetch issue comments** to capture any prior discussion or decisions
-4. **Read `.claude/project-config/PROJECT.md`** to understand the affected service's architecture
-5. **Summarise your understanding** to the user:
+4. **Summarise your understanding** to the user:
    - What the issue is asking for
    - Which repo(s) are affected and why
    - What the acceptance criteria are
    - Any ambiguities or open questions
-6. **Pause and wait for user confirmation** before proceeding to design
+5. **Pause and wait for user confirmation** before proceeding to design
 
 ### Phase 2: Architecture & Solution Design
 
-1. **Delegate code exploration** — read `./sub-agents/code-exploration.md` and dispatch via the Agent tool to map out the files, functions, and patterns relevant to this change
+1. **Delegate code exploration** — read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"design"`, to map out the files, functions, and patterns relevant to this change
 2. **Identify all artefacts that need to change:**
    - Source code files (handlers, services, models, etc.)
    - Test files (unit and integration)
@@ -338,7 +311,7 @@ Use lowercase, hyphens only, no special characters. Keep `{short-description}` t
 
 Use this to map the codebase before designing the solution.
 
-Read `./sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting all `{placeholder}` values defined in that file.
+Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"design"` and all other `{placeholder}` values defined in that file.
 
 **Returns JSON with:** `files_to_modify`, `files_to_create`, `tests_to_update`, `reference_patterns`, `dependencies`, `risk_areas`
 
