@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- code-review skill — inline comments now posted for `suggestion` findings (in addition to `critical` and `warning`). Every finding with a determinable file and line is posted inline; only `praise` remains summary-only.
+- code-review skill Phase 2 — added re-review thread resolution: prior inline threads for fixed issues are resolved via `RESOLVE_CR_THREAD`; persisting/new issues get new inline comments.
+- re-review sub-agent — output JSON now includes `threads_to_resolve` array for the orchestrator to resolve fixed inline threads.
+- code-review skill — added `RESOLVE_CR_THREAD` to the operations used table.
+
 ### Fixed
 
 - API reference skills (GitLab, GitHub, Gitea) — added Pagination section with host-specific loop patterns and pagination-required warnings on `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, and `GET_CR_DIFF` operations. Previously agents silently dropped results beyond the first page.
