@@ -95,20 +95,26 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}"
 ```
 
-**Key response fields:** `iid`, `title`, `description`, `state` (`opened`, `closed`, `merged`), `source_branch`, `target_branch`, `merge_status`, `has_conflicts`, `detailed_merge_status`, `diff_refs` (`base_sha`, `head_sha`, `start_sha`), `updated_at`, `web_url`.
+**Key response fields:** `iid`, `title`, `description`, `state` (`opened`, `closed`, `merged`), `source_branch`, `target_branch`, `has_conflicts`, `detailed_merge_status`, `diff_refs` (`base_sha`, `head_sha`, `start_sha`), `merge_user`, `merged_at`, `updated_at`, `web_url`.
+
+> **`detailed_merge_status` values:** `mergeable`, `unchecked`, `checking`, `conflict`, `not_open`, `not_approved`, `draft_status`, `discussions_not_resolved`, `ci_must_pass`, `ci_still_running`, `need_rebase`, `requested_changes`, `merge_request_blocked`, `preparing`, `commits_status`, `approvals_syncing`, `jira_association_missing`, `merge_time`, `status_checks_must_pass`, `security_policy_violations`, `locked_paths`, `locked_lfs_files`, `title_regex`.
+
+> **Deprecated fields still present:** `merge_status` (deprecated since 15.6 — use `detailed_merge_status`); `merged_by` (deprecated since 14.7 — use `merge_user`).
 
 ---
 
 ### 3. GET_CR_DIFF
 
-Get MR changes (full diff).
+Get MR diff (paginated list of changed files).
 
 ```bash
 curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
-  "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/changes"
+  "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/diffs?per_page=100"
 ```
 
-**Key response fields:** Returns the MR object with an additional `changes` array. Each change has `old_path`, `new_path`, `diff` (unified diff string), `new_file`, `renamed_file`, `deleted_file`.
+**Key response fields:** Paginated array of diff objects. Each has `old_path`, `new_path`, `a_mode`, `b_mode`, `diff` (unified diff string), `new_file`, `renamed_file`, `deleted_file`, `generated_file`, `collapsed` (diff excluded but fetchable), `too_large` (diff excluded and not retrievable).
+
+> **Note:** The previous `/changes` endpoint was deprecated in GitLab 15.7 and is scheduled for removal in API v5. The `/diffs` endpoint returns a bare array of file diff objects (not the MR object with an embedded `changes` array). Paginate with `page` and `per_page` parameters.
 
 ---
 
@@ -169,10 +175,20 @@ Merge a merge request.
 ```bash
 curl -s -X PUT \
   -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sha": "{head_sha}",
+    "should_remove_source_branch": true,
+    "squash": false
+  }' \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/merge_requests/{mr_iid}/merge"
 ```
 
-**Key response fields:** `state` (should become `merged`), `merged_by`, `merged_at`, `web_url`.
+**Optional request parameters:** `sha` (must match source branch HEAD — ensures only reviewed commits merge), `should_remove_source_branch`, `squash`, `squash_commit_message`, `merge_commit_message`, `auto_merge` (merge when pipeline succeeds).
+
+> **Note:** `merge_when_pipeline_succeeds` was deprecated in GitLab 17.11 — use `auto_merge` instead.
+
+**Key response fields:** `state` (should become `merged`), `merge_user`, `merged_at`, `web_url`.
 
 ---
 
@@ -311,7 +327,9 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}"
 ```
 
-**Key response fields:** `iid`, `title`, `description`, `labels`, `milestone`, `state`, `assignees`, `web_url`.
+**Key response fields:** `iid`, `title`, `description`, `labels`, `milestone`, `state`, `assignees`, `issue_type` (e.g., `issue`, `incident`, `test_case`, `task`), `type` (uppercase enum, e.g., `ISSUE`), `web_url`.
+
+> **Deprecated fields still present:** `assignee` (singular, deprecated — use `assignees` array); `epic_iid` (top-level, deprecated for API v5 — use `epic.iid` instead).
 
 ---
 
@@ -327,12 +345,15 @@ curl -s -X POST \
     "title": "{issue title}",
     "description": "{issue description}",
     "labels": "{comma-separated label names}",
-    "milestone_id": {milestone_id}
+    "milestone_id": {milestone_id},
+    "issue_type": "issue"
   }' \
   "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues"
 ```
 
-**Key response fields:** `iid`, `web_url`, `title`, `labels`, `milestone`.
+**Optional request parameters:** `labels`, `milestone_id`, `issue_type` (one of `issue`, `incident`, `test_case`, `task` — default: `issue`), `assignee_ids`, `due_date`, `confidential`.
+
+**Key response fields:** `iid`, `web_url`, `title`, `labels`, `milestone`, `issue_type`, `type`.
 
 ---
 
@@ -542,15 +563,23 @@ curl -s -X POST \
 | `has_conflicts` | boolean | Whether the MR has merge conflicts with the target branch |
 | `draft` | boolean | Whether the MR is marked as a draft |
 | `state` | string | Current state: `opened`, `closed`, or `merged` (MRs); `opened` or `closed` (issues) |
-| `merge_status` | string | Merge readiness: `can_be_merged`, `cannot_be_merged`, `unchecked` |
-| `detailed_merge_status` | string | More granular merge status with specific blocking reasons |
+| `detailed_merge_status` | string | Granular merge readiness — see `GET_CR` for full value list |
+| `merge_status` | string | **Deprecated since 15.6** — use `detailed_merge_status` instead |
 | `changes_count` | string | Number of changed files in the MR (returned as a string) |
 | `author` | object | User object with `id`, `username`, `name`, `avatar_url` |
+| `merge_user` | object | User who merged the MR (replaces deprecated `merged_by`) |
+| `merged_by` | object | **Deprecated since 14.7** — use `merge_user` instead |
+| `merged_at` | string | ISO 8601 timestamp of when the MR was merged |
 | `labels` | array | Array of label strings applied to the issue/MR |
 | `milestone` | object | Milestone object with `id`, `iid`, `title`, `due_date` |
 | `updated_at` | string | ISO 8601 timestamp of the last update |
 | `created_at` | string | ISO 8601 timestamp of creation |
 | `description` | string | Body text of the MR or issue (Markdown) |
+| `issue_type` | string | Issue work item type (lowercase): `issue`, `incident`, `test_case`, `task` |
+| `type` | string | Issue work item type (uppercase enum): e.g., `ISSUE`, `TASK`, `INCIDENT` |
+| `assignees` | array | Array of user objects assigned to the issue (use this, not `assignee`) |
+| `assignee` | object | **Deprecated** — use `assignees` array instead |
+| `epic` | object | Epic linked to the issue; use `epic.iid` (not the deprecated top-level `epic_iid`) |
 | `resolved` | boolean | Whether a discussion thread or note is resolved |
 | `resolvable` | boolean | Whether a note can be resolved |
 | `system` | boolean | Whether a note was auto-generated by GitLab (e.g., status changes) |
