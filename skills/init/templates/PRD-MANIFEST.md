@@ -1,4 +1,4 @@
-<!-- pw-version: 1.0.1 -->
+<!-- pw-version: 1.2.0 -->
 # PRD Manifest
 
 Defines how the `testing-prd` skill's Phase 0 should discover and extract from product requirement documents. PRD files are not a static list — they live in a directory that grows over time.
