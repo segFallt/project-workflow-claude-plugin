@@ -95,69 +95,7 @@ Read `../../shared/api-dispatch.md`.
 
 ### Phase 3: Implementation
 
-1. **For each affected repo**, create an isolated git worktree per `PROJECT.md § Concurrent Session Isolation`. Use the repo's local path from `PROJECT.md § Repository Locations` and the branch naming convention below. All subsequent file edits, builds, tests, and git operations for this session use the worktree path, not the main clone.
-
-   Immediately after creating each worktree, run the following **Worktree Identity & Remote Setup** block. Read the host type, host URL, API base, `GROUP`, and `REPO` from `PROJECT.md § Source Control` and `PROJECT.md § Repository Locations`. `API_TOKEN` is the value loaded from `API_TOKEN_ENV_VAR` in the credential file. Branch on host type:
-
-   **GitLab:**
-   ```bash
-   # Resolve agent identity from the GitLab API
-   AGENT_USER=$(curl -s -H "PRIVATE-TOKEN: ${API_TOKEN}" \
-     "${GITLAB_API_BASE}/user")
-   GIT_USER_NAME=$(echo "$AGENT_USER" | python3 -c \
-     "import sys,json; u=json.load(sys.stdin); print(u['name'])")
-   GIT_USER_EMAIL=$(echo "$AGENT_USER" | python3 -c \
-     "import sys,json; u=json.load(sys.stdin); \
-   print(u.get('commit_email') or u.get('email') or u['username']+'@users.noreply.${GITLAB_HOST}')")
-
-   # Set identity scoped to this worktree only (does not affect global git config)
-   git -C <WORKTREE_PATH> config user.name  "$GIT_USER_NAME"
-   git -C <WORKTREE_PATH> config user.email "$GIT_USER_EMAIL"
-
-   # Embed token in remote URL so git push authenticates without system credential helpers
-   git -C <WORKTREE_PATH> remote set-url origin \
-     "https://oauth2:${API_TOKEN}@${GITLAB_HOST}/${GROUP}/${REPO}.git"
-   ```
-
-   **GitHub:**
-   ```bash
-   # Resolve agent identity from the GitHub API
-   AGENT_USER=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" \
-     "${GITHUB_API_BASE}/user")
-   GIT_USER_NAME=$(echo "$AGENT_USER" | python3 -c \
-     "import sys,json; u=json.load(sys.stdin); print(u['name'] or u['login'])")
-   GIT_USER_EMAIL=$(echo "$AGENT_USER" | python3 -c \
-     "import sys,json; u=json.load(sys.stdin); \
-   print(u.get('email') or str(u['id'])+'+'+u['login']+'@users.noreply.${GITHUB_HOST#*://}')")
-
-   # Set identity scoped to this worktree only (does not affect global git config)
-   git -C <WORKTREE_PATH> config user.name  "$GIT_USER_NAME"
-   git -C <WORKTREE_PATH> config user.email "$GIT_USER_EMAIL"
-
-   # Embed token in remote URL so git push authenticates without system credential helpers
-   git -C <WORKTREE_PATH> remote set-url origin \
-     "https://oauth2:${API_TOKEN}@${GITHUB_HOST#*://}/${GROUP}/${REPO}.git"
-   ```
-
-   **Gitea:**
-   ```bash
-   # Resolve agent identity from the Gitea API
-   AGENT_USER=$(curl -s -H "Authorization: token ${API_TOKEN}" \
-     "${GITEA_HOST}/api/v1/user")
-   GIT_USER_NAME=$(echo "$AGENT_USER" | python3 -c \
-     "import sys,json; u=json.load(sys.stdin); print(u['full_name'] or u['login'])")
-   GIT_USER_EMAIL=$(echo "$AGENT_USER" | python3 -c \
-     "import sys,json; u=json.load(sys.stdin); \
-   print(u.get('email') or u['login']+'@noreply.${GITEA_HOST#*://}')")
-
-   # Set identity scoped to this worktree only (does not affect global git config)
-   git -C <WORKTREE_PATH> config user.name  "$GIT_USER_NAME"
-   git -C <WORKTREE_PATH> config user.email "$GIT_USER_EMAIL"
-
-   # Embed token in remote URL so git push authenticates without system credential helpers
-   git -C <WORKTREE_PATH> remote set-url origin \
-     "https://oauth2:${API_TOKEN}@${GITEA_HOST#*://}/${GROUP}/${REPO}.git"
-   ```
+1. **For each affected repo**, read `../../shared/worktree-setup.md` and follow Steps 1–3 to create the worktree, resolve agent identity, and build the push URL. Use the branch naming convention below. All subsequent file edits, builds, tests, and git operations for this session use the worktree path, not the main clone.
 
 2. **For multi-repo changes**, implement in the dependency order defined in `PROJECT.md § Repository Dependency Order`
 3. **Delegate implementation** — read `./sub-agents/implementation.md` and dispatch via the Agent tool per logical unit
@@ -169,16 +107,18 @@ Read `../../shared/api-dispatch.md`.
 6. **Fix any lint or test failures** — if a failure is non-trivial, delegate the fix to an implementation sub-agent with the error context
 7. **Commit incrementally** as each logical unit is complete:
    ```bash
-   git add {specific files}
-   git commit -m "{type}: {short description} (#{issue_id})"
+   git -C <WORKTREE_PATH> add {specific files}
+   git -C <WORKTREE_PATH> \
+     -c user.name="$GIT_USER_NAME" \
+     -c user.email="$GIT_USER_EMAIL" \
+     commit -m "{type}: {short description} (#{issue_id})"
    ```
 
 ### Phase 4: Change Request Creation
 
-1. **Push the branch** (from inside the worktree). The `origin` remote already uses the token-authenticated URL set during the Phase 3 worktree setup — no additional credential configuration is needed:
+1. **Push the branch** using the authenticated push URL from worktree setup (see `../../shared/worktree-setup.md`). Do NOT use `git push origin` — use `$PUSH_URL` to avoid modifying remote config:
    ```bash
-   cd <WORKTREE_PATH>
-   git push -u origin {branch_name}
+   git -C <WORKTREE_PATH> push -u "$PUSH_URL" {branch_name}
    ```
 2. **Create the CR** via `CREATE_CR` using the CR Description template
 3. **Post a comment on the issue** linking to the CR:
@@ -191,6 +131,16 @@ Read `../../shared/api-dispatch.md`.
 
 ### Phase 5: CI Pipeline Monitoring & Fixes
 
+> **⚠️ LOOP DIRECTIVE — DO NOT EXIT THIS LOOP EARLY.**
+> This is a polling loop. You MUST keep polling until the pipeline reaches a terminal state (`success` or `failed`) or exceeds the stuck threshold.
+> The ONLY permitted exit conditions are:
+> 1. Pipeline status is `success` → proceed to Phase 6
+> 2. Pipeline status is `failed` → diagnose, fix, push, and resume polling
+> 3. Pipeline has been `running` for > 20 minutes → report to user and wait for guidance
+>
+> "No change since last poll" is NOT an exit condition — it means the pipeline is still running. Continue polling.
+> If you exit this loop, you MUST announce: "Exiting CI polling loop because: {reason}."
+
 1. **Poll pipeline status** — check `GET_CR_PIPELINES` every 60 seconds until status is `success` or `failed`
 2. **On pipeline failure:**
    a. Fetch job list to identify the failed job
@@ -198,11 +148,23 @@ Read `../../shared/api-dispatch.md`.
    c. Diagnose the root cause
    d. Present diagnosis and proposed fix to the user; wait for approval
    e. Read `./sub-agents/implementation.md` and dispatch via the Agent tool to fix the failure
-   f. Commit and push the fix; resume polling
-3. **On pipeline stuck (running > 20 minutes):** Report to the user with the job name and duration; ask whether to cancel and re-trigger
-4. **On pipeline success:** Proceed to Phase 6 (Code Review Feedback Loop)
+   f. Commit and push the fix; resume polling from step 1
+3. **On pipeline still running:** Wait 60 seconds. Return to step 1. Do NOT exit.
+4. **On pipeline stuck (running > 20 minutes):** Report to the user with the job name and duration; ask whether to cancel and re-trigger
+5. **On pipeline success:** Proceed to Phase 6 (Code Review Feedback Loop)
 
 ### Phase 6: Code Review Feedback Loop
+
+> **⚠️ LOOP DIRECTIVE — DO NOT EXIT THIS LOOP EARLY.**
+> This is a long-running polling loop. You MUST keep polling until one of the exit conditions below is met.
+> The ONLY permitted exit conditions are:
+> 1. CR state is `merged` → proceed to Phase 7
+> 2. CR state is `closed` → proceed to Phase 7
+> 3. `review_round` > `max_review_rounds` → pause and ask user; exit only if user says "stop" or "take over manually" → proceed to Phase 7
+>
+> "No new feedback" is NOT an exit condition — it means no reviewer has responded yet. Continue polling.
+> "One cycle completed with no activity" is NOT an exit condition. Keep polling.
+> If you exit this loop, you MUST announce: "Exiting review feedback loop because: {reason}."
 
 1. **Initialise tracking state** (once, when entering Phase 6 for the first time):
    - `last_checked_at` = current timestamp (ISO 8601)
@@ -214,7 +176,7 @@ Read `../../shared/api-dispatch.md`.
    b. **If `state` is `merged`:** Notify the user. Proceed to Phase 7.
    c. **If `state` is `closed`:** Notify the user that the CR was closed unexpectedly. Proceed to Phase 7.
    d. **If conflicts detected:** Notify the user; offer to rebase onto `main`. Wait for guidance before continuing.
-   e. Fetch discussions via `GET_CR_DISCUSSIONS`
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Do not stop at the first page. Incomplete discussion data will cause review threads to be silently missed.
    f. **Identify new actionable feedback** — filter discussions where:
       - At least one note in the thread was created or updated after `last_checked_at`, OR no bot reply exists on the thread yet
       - Author is not the bot/agent (exclude notes you have posted yourself)
@@ -226,19 +188,22 @@ Read `../../shared/api-dispatch.md`.
    a. Increment `review_round`
    b. **If `review_round` > `max_review_rounds`:** Present a summary to the user — number of rounds completed, count of unresolved discussions, and links. Ask: "Do you want me to continue, take over manually, or stop?" Wait for user input. If stop, proceed to Phase 7.
    c. Present the **Review Feedback Report** (see Structured Output Templates) to the user and wait for approval before making any changes
-   d. Fetch CR changes via `GET_CR_DIFF` to provide diff context to the sub-agent
+   d. Fetch CR changes via `GET_CR_DIFF` (paginate through all pages) to provide diff context to the sub-agent
    e. Read `./sub-agents/review-feedback.md` and dispatch via the Agent tool, passing all unresolved discussions, the diff, the worktree path, and the original Design Document
    f. After the sub-agent completes, run lint and tests locally in the worktree:
       - See the **Commands** subsection for each repo in `PROJECT.md § Repository Locations`
       - If lint/tests fail, fix before pushing (delegate to implementation sub-agent if non-trivial)
    g. Commit the changes:
       ```bash
-      git add {specific files changed}
-      git commit -m "fix: address review feedback round {review_round} (#{issue_id})"
+      git -C <WORKTREE_PATH> add {specific files changed}
+      git -C <WORKTREE_PATH> \
+        -c user.name="$GIT_USER_NAME" \
+        -c user.email="$GIT_USER_EMAIL" \
+        commit -m "fix: address review feedback round {review_round} (#{issue_id})"
       ```
-   h. Push the changes. The `origin` remote already uses the token-authenticated URL set during the Phase 3 worktree setup:
+   h. Push the changes using the authenticated push URL from worktree setup:
       ```bash
-      git push origin {branch_name}
+      git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
       ```
    i. For each discussion in `changes_made` from the sub-agent output:
       - Post a reply via `REPLY_TO_CR_THREAD` with the sub-agent's `reply_text`
