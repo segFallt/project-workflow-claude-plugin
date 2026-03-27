@@ -80,6 +80,33 @@ GET <INSTANCE_URL>/api/v1/repos/<OWNER>/my-service/issues
 
 ---
 
+## Pagination
+
+Gitea paginates list endpoints. Always paginate when the result set may exceed one page.
+
+**Parameters:** `limit` (max varies by instance, typically 50), `page` (1-based, default 1).
+
+**Pattern — loop until empty page:**
+```bash
+PAGE=1
+LIMIT=50
+ALL_RESULTS="[]"
+while true; do
+  RESPONSE=$(curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
+    -H "Accept: application/json" \
+    "{endpoint_url}?limit=${LIMIT}&page=${PAGE}{&other_params}")
+  COUNT=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
+  [ "$COUNT" -eq 0 ] && break
+  ALL_RESULTS=$(printf '%s\n%s' "$ALL_RESULTS" "$RESPONSE" | jq -s '.[0] + .[1]')
+  [ "$COUNT" -lt "$LIMIT" ] && break
+  PAGE=$((PAGE + 1))
+done
+```
+
+> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, and `LIST_OPEN_CRS`. Any endpoint returning an array may be paginated.
+
+---
+
 ## API Operations
 
 ### 1. LIST_OPEN_CRS
@@ -125,6 +152,8 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 **Key response fields:** Array of file objects with `filename`, `status` (`added`, `removed`, `modified`, `renamed`), `additions`, `deletions`, `changes`, `contents_url`, `previous_filename` (for renames).
 
 > **Note:** To get the raw unified diff, request the diff directly: `GET <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}.diff` (returns plain-text diff).
+
+> **⚠️ Pagination required:** This endpoint may return limited results per page. Paginate through all pages (see Pagination section above) when PRs have many changed files.
 
 ---
 
@@ -293,6 +322,8 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 **Key response fields (general):** Array of comment objects with `id`, `body`, `user`, `created_at`, `updated_at`, `html_url`.
 
 **Key response fields (review comments):** Array of review comment objects with `id`, `body`, `user`, `path`, `created_at`, `updated_at`.
+
+> **⚠️ Pagination required:** Both endpoints may return limited results per page. Paginate through all pages (see Pagination section above) to get all comments.
 
 ---
 
@@ -580,6 +611,8 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 **Key response fields (review comments):** Array of comment objects with `id`, `body`, `path`, `user`, `created_at`, `updated_at`.
 
 > **Threading model:** Gitea reviews are the primary grouping mechanism. Each review contains zero or more inline comments. To reconstruct discussions, iterate through all reviews and their comments. Unlike GitHub, there is no `in_reply_to_id` threading within review comments.
+
+> **⚠️ Pagination required:** This endpoint may return limited results per page. You MUST paginate through all pages (see Pagination section above) to ensure no reviews are missed.
 
 ---
 

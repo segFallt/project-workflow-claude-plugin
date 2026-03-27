@@ -71,6 +71,32 @@ GET <API_BASE_URL>/api/v4/projects/42/merge_requests
 
 ---
 
+## Pagination
+
+GitLab paginates list endpoints. Always paginate when the result set may exceed one page.
+
+**Parameters:** `per_page` (max 100), `page` (1-based, default 1).
+
+**Pattern — loop until empty page:**
+```bash
+PAGE=1
+ALL_RESULTS="[]"
+while true; do
+  RESPONSE=$(curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
+    "{endpoint_url}?per_page=100&page=${PAGE}{&other_params}")
+  # Exit when page is empty
+  COUNT=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
+  [ "$COUNT" -eq 0 ] && break
+  ALL_RESULTS=$(printf '%s\n%s' "$ALL_RESULTS" "$RESPONSE" | jq -s '.[0] + .[1]')
+  [ "$COUNT" -lt 100 ] && break
+  PAGE=$((PAGE + 1))
+done
+```
+
+> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, and `LIST_OPEN_CRS`. Any endpoint returning an array may be paginated.
+
+---
+
 ## API Operations
 
 ### 1. LIST_OPEN_CRS
@@ -115,6 +141,8 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 **Key response fields:** Paginated array of diff objects. Each has `old_path`, `new_path`, `a_mode`, `b_mode`, `diff` (unified diff string), `new_file`, `renamed_file`, `deleted_file`, `generated_file`, `collapsed` (diff excluded but fetchable), `too_large` (diff excluded and not retrievable).
 
 > **Note:** The previous `/changes` endpoint was deprecated in GitLab 15.7 and is scheduled for removal in API v5. The `/diffs` endpoint returns a bare array of file diff objects (not the MR object with an embedded `changes` array). Paginate with `page` and `per_page` parameters.
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) when MRs have many changed files.
 
 ---
 
@@ -263,6 +291,8 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ```
 
 **Key response fields:** Array of note objects with `id`, `body`, `author`, `created_at`, `updated_at`, `system` (boolean, true for system-generated notes).
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. You MUST paginate through all pages (see Pagination section above) to get all comments.
 
 ---
 
@@ -467,6 +497,8 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 ```
 
 **Key response fields:** Array of discussion objects. Each has `id`, `notes[]` (array of note objects with `id`, `body`, `author`, `created_at`, `updated_at`, `resolvable`, `resolved`, `position`). The `position` field is present for inline comment threads and contains `new_path` and `new_line`.
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. You MUST paginate through all pages (see Pagination section above) to ensure no discussions are missed. Failing to paginate will silently drop review threads.
 
 ---
 
