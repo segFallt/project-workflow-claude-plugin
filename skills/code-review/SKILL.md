@@ -179,14 +179,7 @@ Skip a CR (do not review) if any of the following are true:
 
 ## Review Criteria
 
-Before reading `.claude/project-config/REVIEW-CRITERIA.md`, apply the Read-Through Protocol from `../../shared/memory-cache.md`:
-
-1. Check memory for an entry named `project-config-REVIEW-CRITERIA`.
-2. If found, compare the stored `**pw-version:**` with line 1 of the actual file. On match → use memory content. On mismatch → read full file, refresh memory entry.
-3. If not found → read the full file, write a new memory entry, and use the content.
-4. If memory unavailable → read the file directly.
-
-`REVIEW-CRITERIA.md` contains universal and per-repo review criteria organized by repo.
+Read `.claude/project-config/REVIEW-CRITERIA.md` for all review criteria, organized by repo.
 
 The **Universal** section applies to all repos. When dispatching sub-agents, read the relevant repo's section from `REVIEW-CRITERIA.md` and pass it inline alongside the universal criteria to populate the `{universal criteria + repo-specific criteria}` field in the sub-agent prompt template.
 
