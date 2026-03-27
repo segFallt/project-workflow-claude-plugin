@@ -55,6 +55,9 @@ Review every changed file against the criteria, taking into account the prior re
       "message": "Clear, actionable description of the issue or praise"
     }
   ],
+  "threads_to_resolve": [
+    "<discussion_id of a prior inline thread whose issue has been fixed by the author>"
+  ],
   "checklist": {
     "no_secrets": true | false,
     "no_generated_file_edits": true | false,
@@ -74,6 +77,7 @@ Rules:
 - Be actionable: say what should change, not just what's wrong
 - Do NOT re-flag issues that have been resolved
 - If a linked issue is provided, verify the diff addresses its requirements
+- For `threads_to_resolve`: examine the discussion threads provided. For each inline thread from a prior review round where the issue has been fixed by the author, include that thread's `discussion_id` (from the discussion object's `id` field) in the `threads_to_resolve` array. Only include threads that are genuinely resolved — do not include threads where the issue persists
 ```
 
 ---

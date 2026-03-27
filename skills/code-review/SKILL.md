@@ -74,6 +74,7 @@ All API calls in this skill use the following **standardized operation names**. 
 - `POST_CR_INLINE_COMMENT` — post an inline comment on a specific line/file
 - `APPROVE_CR` — approve a CR
 - `UNAPPROVE_CR` — remove approval from a CR
+- `RESOLVE_CR_THREAD` — resolve/unresolve a discussion thread
 - `GET_CR_LINKED_ISSUES` — get issues linked to/closed by a CR
 
 ---
@@ -101,7 +102,10 @@ This skill operates in two phases:
 4. **Fetch CR changes** (full diff) via `GET_CR_DIFF` (paginate through all pages) for CRs that need review
 5. **Fetch linked issues** — call `GET_CR_LINKED_ISSUES` for each CR. If any issues are returned, note their title, description, labels, and URL to pass to the sub-agent
 6. **Delegate to the Initial Review Sub-Agent** — read `./sub-agents/initial-review.md` and dispatch via the Agent tool, passing the diff, CR metadata, review criteria, and any linked issue context
-7. **Post findings** based on sub-agent output via `POST_CR_COMMENT` and `POST_CR_INLINE_COMMENT`
+7. **Post findings** based on sub-agent output:
+   a. Post the summary comment via `POST_CR_COMMENT` using the Summary Comment template
+   b. For each `critical`, `warning`, or `suggestion` finding that has a non-null `file` and `line`, post an **inline comment** via `POST_CR_INLINE_COMMENT` (see Inline Comments formatting below). Every finding with a determinable file and line MUST be posted inline — do not silently fall back to summary-only.
+   c. `praise` findings remain in the summary comment only — do NOT post inline comments for praise
 8. **Approve or revoke** based on verdict:
    - If verdict is `approve` → call `APPROVE_CR`
    - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1)
@@ -140,7 +144,11 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
    d. Fetch linked issues via `GET_CR_LINKED_ISSUES`
    e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
    f. **Delegate to the Re-Review Sub-Agent** — read `./sub-agents/re-review.md` and dispatch via the Agent tool
-   g. Post updated findings as a new summary comment (include round number, see Comment Formatting)
+   g. **Post updated findings and manage inline threads:**
+      - Post the summary comment via `POST_CR_COMMENT` (include round number, see Comment Formatting)
+      - For each `critical`, `warning`, or `suggestion` finding with non-null `file` and `line`, post an inline comment via `POST_CR_INLINE_COMMENT`
+      - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author)
+      - For issues that persist from the previous round, post a new inline comment rather than replying to the old thread (new code positions may have shifted)
    h. **Approve or revoke** based on new verdict:
       - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list
       - If verdict is `request_changes` → call `UNAPPROVE_CR`; update `last_review_at` = now; continue tracking
@@ -242,15 +250,25 @@ Use this template for the summary comment on every reviewed CR. For Phase 1 (ini
 
 ### Inline Comments
 
-For each `critical` or `warning` finding that has a specific `file` and `line`, post an **inline comment** using the `POST_CR_INLINE_COMMENT` operation. Format:
+For each `critical`, `warning`, or `suggestion` finding that has a non-null `file` and `line`, post an **inline comment** using the `POST_CR_INLINE_COMMENT` operation. Format:
 
 ```
 **{severity emoji} {Severity}:** {message}
 ```
 
-Severity emojis: 🚨 critical, ⚠️ warning
+Severity emojis: 🚨 critical, ⚠️ warning, 💡 suggestion
 
-Do NOT post inline comments for `suggestion` or `praise` — those go in the summary only.
+**Rules:**
+- Every finding with a determinable `file` and `line` MUST be posted as an inline comment — do not silently fall back to summary-only
+- `praise` findings remain in the summary comment only — do NOT post inline comments for praise
+- If an inline comment fails to post (e.g., invalid position), log the error and include the finding in the summary comment instead
+
+### Re-Review Inline Comment Resolution
+
+On re-review rounds (Phase 2), manage prior inline threads:
+- **Resolved issues:** If a prior `critical`/`warning`/`suggestion` inline thread is now addressed by the author, resolve the thread via `RESOLVE_CR_THREAD`
+- **Persisting issues:** Post a new inline comment at the current file/line position (do not reply to old threads — line numbers may have shifted)
+- **New issues:** Post new inline comments as normal
 
 ### Tone Guidelines
 
