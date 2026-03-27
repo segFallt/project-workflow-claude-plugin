@@ -78,6 +78,33 @@ GET <INSTANCE_URL>/api/v3/repos/<OWNER>/my-service/pulls
 
 ---
 
+## Pagination
+
+GitHub paginates list endpoints. Always paginate when the result set may exceed one page.
+
+**Parameters:** `per_page` (max 100), `page` (1-based, default 1).
+
+**Pattern — loop until empty page:**
+```bash
+PAGE=1
+ALL_RESULTS="[]"
+while true; do
+  RESPONSE=$(curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "{endpoint_url}?per_page=100&page=${PAGE}{&other_params}")
+  COUNT=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
+  [ "$COUNT" -eq 0 ] && break
+  ALL_RESULTS=$(printf '%s\n%s' "$ALL_RESULTS" "$RESPONSE" | jq -s '.[0] + .[1]')
+  [ "$COUNT" -lt 100 ] && break
+  PAGE=$((PAGE + 1))
+done
+```
+
+> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, and `LIST_OPEN_CRS`. Any endpoint returning an array may be paginated.
+
+---
+
 ## API Operations
 
 ### 1. LIST_OPEN_CRS
@@ -124,6 +151,8 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 ```
 
 **Key response fields:** Array of file objects with `filename`, `status` (`added`, `removed`, `modified`, `renamed`), `additions`, `deletions`, `changes`, `patch` (unified diff string), `previous_filename` (for renames).
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) when PRs have many changed files.
 
 ---
 
@@ -326,6 +355,8 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 **Key response fields (general):** Array of comment objects with `id`, `body`, `user`, `created_at`, `updated_at`, `html_url`.
 
 **Key response fields (review):** Array of review comment objects with `id`, `body`, `user`, `path`, `line`, `side`, `in_reply_to_id`, `created_at`, `updated_at`, `html_url`.
+
+> **⚠️ Pagination required:** Both endpoints return at most 100 items per page. Paginate through all pages (see Pagination section above) to get all comments.
 
 ---
 
@@ -595,6 +626,8 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 **Key response fields:** Array of review comment objects. Each has `id`, `body`, `user`, `path`, `line`, `side`, `in_reply_to_id`, `created_at`, `updated_at`, `html_url`.
 
 > **Threading model:** GitHub uses `in_reply_to_id` to represent threads. Comments where `in_reply_to_id` is absent or `null` are thread roots. Comments with `in_reply_to_id` set are replies to that root comment. To reconstruct threads, group comments by their root `id` — all replies point back to the same root comment's `id` via their `in_reply_to_id` field.
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. You MUST paginate through all pages (see Pagination section above) to ensure no review threads are missed.
 
 ---
 
