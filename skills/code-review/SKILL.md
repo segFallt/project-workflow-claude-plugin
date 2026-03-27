@@ -87,6 +87,8 @@ This skill operates in two phases:
 
 ### Phase 1: Initial Review Sweep
 
+> **Note on `/loop` integration:** When this skill is invoked via `/loop` (e.g., `/loop 2m /cr-review`), each invocation runs Phase 1 (one sweep) and then Phase 2 (monitor until tracking list is empty). The `/loop` skill handles re-invoking the entire cycle at the specified interval to discover new CRs. You do NOT need to loop Phase 1 yourself — but you MUST complete Phase 2's monitoring loop fully before the invocation ends.
+
 1. **Fetch open CRs** — call the `LIST_OPEN_CRS` operation
 2. **For each CR**, evaluate skip conditions (see below)
 3. **For non-skipped CRs**, check deduplication:
@@ -106,6 +108,16 @@ This skill operates in two phases:
 9. **Proceed to Phase 2** when all CRs have been processed
 
 ### Phase 2: Feedback Monitoring Loop
+
+> **⚠️ LOOP DIRECTIVE — DO NOT EXIT THIS LOOP EARLY.**
+> This is a long-running polling loop. You MUST keep polling until the tracking list is empty.
+> The ONLY permitted exit conditions are:
+> 1. The tracking list is empty (all monitored CRs are approved, merged, or closed)
+> 2. `review_round` > 5 for a specific CR → remove that CR from the list and continue the loop for remaining CRs
+>
+> "No new activity on any CR" is NOT an exit condition — it means authors haven't responded yet. Continue polling.
+> "One poll cycle completed" is NOT an exit condition. Keep polling.
+> If you exit this loop, you MUST announce: "Exiting feedback monitoring loop because: {reason}."
 
 After the sweep, monitor all CRs in the tracking list until each is resolved. The Phase 1 dedup logic (`<!-- claude-review -->` marker check) applies only to the sweep; Phase 2 uses `last_review_at` timestamps for activity detection.
 

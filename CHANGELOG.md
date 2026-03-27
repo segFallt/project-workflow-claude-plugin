@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - API reference skills (GitLab, GitHub, Gitea) — added Pagination section with host-specific loop patterns and pagination-required warnings on `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, and `GET_CR_DIFF` operations. Previously agents silently dropped results beyond the first page.
 - development skill Phase 6 and code-review skill Phase 1/2 — added explicit pagination instructions when fetching discussions, comments, and diffs to prevent incomplete data
+- development skill Phase 5 (CI monitoring) and Phase 6 (review feedback) — added explicit LOOP DIRECTIVE blocks that enumerate the only permitted exit conditions and require the agent to announce when and why it exits. Prevents silent loop termination.
+- code-review skill Phase 2 (feedback monitoring) — added same LOOP DIRECTIVE pattern. Added `/loop` integration note to Phase 1 clarifying the handoff between `/loop` re-invocations and Phase 2 monitoring.
 
 ## [1.2.1] - 2026-03-27
 

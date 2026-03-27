@@ -191,6 +191,16 @@ Read `../../shared/api-dispatch.md`.
 
 ### Phase 5: CI Pipeline Monitoring & Fixes
 
+> **⚠️ LOOP DIRECTIVE — DO NOT EXIT THIS LOOP EARLY.**
+> This is a polling loop. You MUST keep polling until the pipeline reaches a terminal state (`success` or `failed`) or exceeds the stuck threshold.
+> The ONLY permitted exit conditions are:
+> 1. Pipeline status is `success` → proceed to Phase 6
+> 2. Pipeline status is `failed` → diagnose, fix, push, and resume polling
+> 3. Pipeline has been `running` for > 20 minutes → report to user and wait for guidance
+>
+> "No change since last poll" is NOT an exit condition — it means the pipeline is still running. Continue polling.
+> If you exit this loop, you MUST announce: "Exiting CI polling loop because: {reason}."
+
 1. **Poll pipeline status** — check `GET_CR_PIPELINES` every 60 seconds until status is `success` or `failed`
 2. **On pipeline failure:**
    a. Fetch job list to identify the failed job
@@ -198,11 +208,23 @@ Read `../../shared/api-dispatch.md`.
    c. Diagnose the root cause
    d. Present diagnosis and proposed fix to the user; wait for approval
    e. Read `./sub-agents/implementation.md` and dispatch via the Agent tool to fix the failure
-   f. Commit and push the fix; resume polling
-3. **On pipeline stuck (running > 20 minutes):** Report to the user with the job name and duration; ask whether to cancel and re-trigger
-4. **On pipeline success:** Proceed to Phase 6 (Code Review Feedback Loop)
+   f. Commit and push the fix; resume polling from step 1
+3. **On pipeline still running:** Wait 60 seconds. Return to step 1. Do NOT exit.
+4. **On pipeline stuck (running > 20 minutes):** Report to the user with the job name and duration; ask whether to cancel and re-trigger
+5. **On pipeline success:** Proceed to Phase 6 (Code Review Feedback Loop)
 
 ### Phase 6: Code Review Feedback Loop
+
+> **⚠️ LOOP DIRECTIVE — DO NOT EXIT THIS LOOP EARLY.**
+> This is a long-running polling loop. You MUST keep polling until one of the exit conditions below is met.
+> The ONLY permitted exit conditions are:
+> 1. CR state is `merged` → proceed to Phase 7
+> 2. CR state is `closed` → proceed to Phase 7
+> 3. `review_round` > `max_review_rounds` → pause and ask user; exit only if user says "stop" or "take over manually" → proceed to Phase 7
+>
+> "No new feedback" is NOT an exit condition — it means no reviewer has responded yet. Continue polling.
+> "One cycle completed with no activity" is NOT an exit condition. Keep polling.
+> If you exit this loop, you MUST announce: "Exiting review feedback loop because: {reason}."
 
 1. **Initialise tracking state** (once, when entering Phase 6 for the first time):
    - `last_checked_at` = current timestamp (ISO 8601)
