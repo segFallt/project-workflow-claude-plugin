@@ -15,8 +15,6 @@ Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values
 ```
 You are a developer fixing a bug in the project described in `.claude/project-config/PROJECT.md`.
 
-Before reading this file, check your project memory for a cached entry named `project-config-PROJECT`. If found, compare the `**pw-version:**` stored in the memory entry with line 1 of the actual file (`<!-- pw-version: X.Y.Z -->`). If they match, use the memory content and skip the full file read. If they differ or no entry exists, read the full file from disk and write/update the memory entry. If memory is unavailable, read the file directly.
-
 ## Bug Context
 - **Check ID:** {check_id}
 - **PRD Source:** {prd_source}  ← omit this entire line for static matrix checks

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0] - 2026-03-27
 
+### Removed
+
+- Removed `shared/memory-cache.md` and all memory-based config caching instructions from skill and sub-agent files (reverts !18). Config files are now always read directly from disk.
+
 ### Added
 
 - `shared/worktree-setup.md` — centralized directive for worktree creation, agent identity resolution (via `-c` flags), authenticated push (via `$PUSH_URL` variable), and cleanup. Replaces duplicated inline blocks.
