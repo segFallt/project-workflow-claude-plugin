@@ -29,16 +29,12 @@ Before reading this file, check your project memory for a cached entry named `pr
 {specific_description_of_what_to_change}
 
 ## Repo & Branch
-- Create a git worktree for the fix branch (see `PROJECT.md § Concurrent Session Isolation`):
-  ```bash
-  cd <REPO_LOCAL_PATH>
-  git fetch origin
-  git worktree add \
-    <WORKTREES_BASE>/fix/{check_id}-{short_description}/{repo_name} \
-    -b fix/{check_id}-{short_description} origin/main
-  ```
-- **Working path:** `<WORKTREES_BASE>/fix/{check_id}-{short_description}/{repo_name}/`
-- Do not create or switch branches — the branch is already set up in the worktree
+
+The orchestrator creates the worktree and resolves identity/push credentials per `../../shared/worktree-setup.md` before dispatching this sub-agent.
+
+**Working path:** Provided by the orchestrator as `{worktree_path}`.
+
+Do not create worktrees, run `git fetch`, modify git config, or switch branches. The worktree and branch are already set up by the orchestrator.
 
 ## Constraints
 - Follow existing code conventions (see `.claude/project-config/PROJECT.md`)
@@ -65,5 +61,4 @@ Run the lint, test, and build commands for `{repo_name}` as listed in the **Comm
 | `{specific_description_of_what_to_change}` | Orchestrator fills in | Precise fix instructions (files, functions, config keys) |
 | `{repo_name}` | Orchestrator fills in | Repository name as defined in `PROJECT.md § Repository Locations` |
 | `{short_description}` | Orchestrator fills in | Kebab-case slug summarising the fix (e.g., `fix-gateway-timeout`) |
-| `<REPO_LOCAL_PATH>` | Resolved from `PROJECT.md § Concurrent Session Isolation` | Local filesystem path to the repository's main clone |
-| `<WORKTREES_BASE>` | Resolved from `PROJECT.md § Concurrent Session Isolation` | Worktrees base path from `PROJECT.md § Concurrent Session Isolation` |
+| `{worktree_path}` | Provided by orchestrator | Absolute filesystem path to the worktree created by the orchestrator before dispatch |
