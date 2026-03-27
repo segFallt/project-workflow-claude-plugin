@@ -90,13 +90,13 @@ This skill operates in two phases:
 1. **Fetch open CRs** — call the `LIST_OPEN_CRS` operation
 2. **For each CR**, evaluate skip conditions (see below)
 3. **For non-skipped CRs**, check deduplication:
-   - Fetch existing comments via `GET_CR_COMMENTS`
+   - Fetch existing comments via `GET_CR_COMMENTS` (paginate through all pages)
    - If any comment body contains `<!-- claude-review -->`, find the most recent such comment's `created_at` timestamp
    - **Re-review** if ANY of these are true:
      - CR `updated_at` is newer than the review comment's `created_at` (code was pushed or metadata changed)
      - Any non-bot comment (i.e., not authored by the review bot) was created after the review comment's `created_at` (new human comments)
    - Otherwise, **skip** (already reviewed, no new activity)
-4. **Fetch CR changes** (full diff) via `GET_CR_DIFF` for CRs that need review
+4. **Fetch CR changes** (full diff) via `GET_CR_DIFF` (paginate through all pages) for CRs that need review
 5. **Fetch linked issues** — call `GET_CR_LINKED_ISSUES` for each CR. If any issues are returned, note their title, description, labels, and URL to pass to the sub-agent
 6. **Delegate to the Initial Review Sub-Agent** — read `./sub-agents/initial-review.md` and dispatch via the Agent tool, passing the diff, CR metadata, review criteria, and any linked issue context
 7. **Post findings** based on sub-agent output via `POST_CR_COMMENT` and `POST_CR_INLINE_COMMENT`
@@ -124,9 +124,9 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
 4. **If new activity is detected on a CR:**
    a. Increment `review_round`
    b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list. Continue loop for remaining CRs.
-   c. Fetch CR changes (full diff) via `GET_CR_DIFF`
+   c. Fetch CR changes (full diff) via `GET_CR_DIFF` (paginate through all pages)
    d. Fetch linked issues via `GET_CR_LINKED_ISSUES`
-   e. Fetch all discussions via `GET_CR_DISCUSSIONS` — pass these to the sub-agent so it understands what was previously flagged and how the author responded
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
    f. **Delegate to the Re-Review Sub-Agent** — read `./sub-agents/re-review.md` and dispatch via the Agent tool
    g. Post updated findings as a new summary comment (include round number, see Comment Formatting)
    h. **Approve or revoke** based on new verdict:

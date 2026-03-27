@@ -214,7 +214,7 @@ Read `../../shared/api-dispatch.md`.
    b. **If `state` is `merged`:** Notify the user. Proceed to Phase 7.
    c. **If `state` is `closed`:** Notify the user that the CR was closed unexpectedly. Proceed to Phase 7.
    d. **If conflicts detected:** Notify the user; offer to rebase onto `main`. Wait for guidance before continuing.
-   e. Fetch discussions via `GET_CR_DISCUSSIONS`
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Do not stop at the first page. Incomplete discussion data will cause review threads to be silently missed.
    f. **Identify new actionable feedback** — filter discussions where:
       - At least one note in the thread was created or updated after `last_checked_at`, OR no bot reply exists on the thread yet
       - Author is not the bot/agent (exclude notes you have posted yourself)
@@ -226,7 +226,7 @@ Read `../../shared/api-dispatch.md`.
    a. Increment `review_round`
    b. **If `review_round` > `max_review_rounds`:** Present a summary to the user — number of rounds completed, count of unresolved discussions, and links. Ask: "Do you want me to continue, take over manually, or stop?" Wait for user input. If stop, proceed to Phase 7.
    c. Present the **Review Feedback Report** (see Structured Output Templates) to the user and wait for approval before making any changes
-   d. Fetch CR changes via `GET_CR_DIFF` to provide diff context to the sub-agent
+   d. Fetch CR changes via `GET_CR_DIFF` (paginate through all pages) to provide diff context to the sub-agent
    e. Read `./sub-agents/review-feedback.md` and dispatch via the Agent tool, passing all unresolved discussions, the diff, the worktree path, and the original Design Document
    f. After the sub-agent completes, run lint and tests locally in the worktree:
       - See the **Commands** subsection for each repo in `PROJECT.md § Repository Locations`
