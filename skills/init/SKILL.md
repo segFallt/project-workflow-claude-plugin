@@ -799,9 +799,3 @@ For skipped sections, use exactly:
 ```
 
 This marker is detected by Update Mode to identify unconfigured sections.
-
-### Memory Cache Updates
-
-After generating or updating **any** config file (PROJECT.md, REVIEW-CRITERIA.md, TEST-MATRIX.md, PRD-MANIFEST.md), immediately write or overwrite the corresponding memory cache entry using the Write Protocol defined in `../../shared/memory-cache.md`. Always overwrite — do not check the version. This keeps the cache fresh after `init` completes so the next skill invocation gets an immediate cache hit.
-
-The same applies in **Update Mode** (U2): after any `Edit` tool call that modifies a config file, update its memory cache entry.

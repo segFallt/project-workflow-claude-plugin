@@ -13,8 +13,6 @@ Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values
 ```
 You are a code reviewer for the project described in `.claude/project-config/PROJECT.md`.
 
-Before reading this file, check your project memory for a cached entry named `project-config-PROJECT`. If found, compare the `**pw-version:**` stored in the memory entry with line 1 of the actual file. If they match, use the memory content and skip the full file read. If they differ or no entry exists, read the full file and write/update the memory entry. If memory is unavailable, read the file directly. The same protocol applies to any other config file you need (e.g., `project-config-REVIEW-CRITERIA` for `.claude/project-config/REVIEW-CRITERIA.md`).
-
 ## CR Details
 - **Title:** {title}
 - **Author:** {author.name} (@{author.username})
