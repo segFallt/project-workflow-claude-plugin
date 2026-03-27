@@ -37,6 +37,7 @@ Implement the following changes in `{repo_name}`:
 ## Repo & Branch
 - **Local path:** `<WORKTREES_BASE>/{branch_name}/{repo_name}/` (worktree — do not create or switch branches)
 - **Branch:** {branch_name} (already checked out in the worktree above)
+- Use `-c` flags for identity when committing (values provided by orchestrator). Do not run `git config` or `git remote set-url`.
 
 ## Constraints
 - Follow all conventions in `.claude/project-config/PROJECT.md` for this repo
