@@ -296,7 +296,12 @@ Additional error handling for PRD-driven testing:
 
 ### Dispatching the Bug-Fix Sub-Agent
 
-When delegating a fix, read `../../shared/sub-agents/bug-fix.md` and dispatch via the Agent tool with the following bug context:
+Before dispatching, create a worktree for the fix branch per `../../shared/worktree-setup.md`:
+
+1. **Create the worktree** — follow Steps 1-3 of `../../shared/worktree-setup.md` (fetch & create worktree, resolve agent identity, build authenticated push URL). Use branch name `fix/{check_id}-{short_description}` and the target repo from `PROJECT.md § Repository Locations`.
+2. **Record the worktree path** — store the resulting path as `{worktree_path}` (e.g., `<WORKTREES_BASE>/.worktrees/fix/{check_id}-{short_description}/{repo_name}`).
+
+Then read `../../shared/sub-agents/bug-fix.md` and dispatch via the Agent tool with the following bug context, passing the worktree path so the sub-agent works in the correct directory:
 
 - **Check ID:** {check_id}
 - **PRD Source:** {prd_source}
@@ -305,6 +310,7 @@ When delegating a fix, read `../../shared/sub-agents/bug-fix.md` and dispatch vi
 - **Root Cause:** {diagnosed_cause}
 - **Relevant Logs:** {error_snippets}
 - **Fix Instructions:** {specific_description_of_what_to_change}
+- **Worktree Path:** {worktree_path}
 
 ---
 

@@ -40,6 +40,7 @@ Before reading this file, check your project memory for a cached entry named `pr
 ## Repo & Branch
 - **Local path:** `<WORKTREES_BASE>/{branch_name}/{repo_name}/` (worktree — already checked out)
 - **Branch:** {branch_name}
+- Use `-c` flags for identity when committing (values provided by orchestrator). Do not run `git config` or `git remote set-url`.
 
 ## Constraints
 - Follow all conventions in `.claude/project-config/PROJECT.md` for this repo

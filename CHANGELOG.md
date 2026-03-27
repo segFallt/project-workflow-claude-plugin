@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `shared/worktree-setup.md` — centralized directive for worktree creation, agent identity resolution (via `-c` flags), authenticated push (via `$PUSH_URL` variable), and cleanup. Replaces duplicated inline blocks.
+
 ### Changed
 
 - code-review skill — inline comments now posted for `suggestion` findings (in addition to `critical` and `warning`). Every finding with a determinable file and line is posted inline; only `praise` remains summary-only.
 - code-review skill Phase 2 — added re-review thread resolution: prior inline threads for fixed issues are resolved via `RESOLVE_CR_THREAD`; persisting/new issues get new inline comments.
 - re-review sub-agent — output JSON now includes `threads_to_resolve` array for the orchestrator to resolve fixed inline threads.
 - code-review skill — added `RESOLVE_CR_THREAD` to the operations used table.
+- development skill Phase 3 — replaced ~60 lines of inline Worktree Identity & Remote Setup (GitLab/GitHub/Gitea blocks) with reference to `shared/worktree-setup.md`. Commit and push commands updated to use `-c` flags and `$PUSH_URL`.
+- bug-fix sub-agent — now receives worktree path from orchestrator instead of creating its own. Orchestrator responsibilities documented.
+- testing-static and testing-prd skills — updated bug-fix dispatch to create worktree per `shared/worktree-setup.md` before sub-agent dispatch and pass `{worktree_path}`.
+- implementation and review-feedback sub-agents — added prohibition against `git config` and `git remote set-url`; use `-c` flags for identity.
 
 ### Fixed
 
@@ -20,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - development skill Phase 6 and code-review skill Phase 1/2 — added explicit pagination instructions when fetching discussions, comments, and diffs to prevent incomplete data
 - development skill Phase 5 (CI monitoring) and Phase 6 (review feedback) — added explicit LOOP DIRECTIVE blocks that enumerate the only permitted exit conditions and require the agent to announce when and why it exits. Prevents silent loop termination.
 - code-review skill Phase 2 (feedback monitoring) — added same LOOP DIRECTIVE pattern. Added `/loop` integration note to Phase 1 clarifying the handoff between `/loop` re-invocations and Phase 2 monitoring.
+- Agent git operations no longer modify the project owner's `~/.gitconfig` or the main checkout's remote URLs. Identity and push authentication are now transient (shell variables and `-c` flags only).
 
 ## [1.2.1] - 2026-03-27
 
