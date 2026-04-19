@@ -12,8 +12,6 @@ State files live in the **primary repo's main checkout**, never inside a worktre
 <PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/
 ```
 
-For single-repo changes this is unambiguous. For multi-repo changes, use the first repo in `PROJECT.md § Repository Dependency Order`.
-
 > **Important:** The worktree is cleaned up in Phase 7; the state file must outlive it until explicitly deleted.
 
 ---
