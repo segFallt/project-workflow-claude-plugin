@@ -38,7 +38,7 @@ Before running this skill, ensure the following are in place:
 
 ## Environment Setup
 
-Read `../../shared/environment-setup.md` and `../../shared/trunk-branch.md`.
+Read `../../shared/environment-setup.md`, `../../shared/trunk-branch.md`, and `../../shared/state-tracking.md`.
 
 ---
 
@@ -72,12 +72,26 @@ Read `../../shared/api-dispatch.md`.
    - A short reference: `<repo-name>#42` or just `#42` with the repo implicit from context
 2. **Fetch the issue** via `GET_ISSUE`
 3. **Fetch issue comments** to capture any prior discussion or decisions
-4. **Summarise your understanding** to the user:
+4. **Scan for existing state file** — after fetching the issue, read `../../shared/state-tracking.md` for the full state pattern, then:
+   - Scan all files in `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development/` (if the directory exists)
+   - For each `.json` file found, read it via Python 3 and check if `issue.id` matches the current issue's ID
+   - **If a matching non-stale file is found:** Present to the user:
+     > "Found an existing state file for issue #{issue_id} (branch: `{branch}`, phase: {phase}, last updated: {updated_at}). Resume from where we left off, restart from scratch, or cancel?"
+     - **Resume:** read the full state, restore all pointers (`branch`, `worktrees`, `cr`, `loop`, `design_document_md`, `skipped_items`), and jump to the phase stored in `phase`
+     - **Restart:** delete the state file and proceed from scratch
+     - **Cancel:** stop the skill entirely
+   - **If a matching stale file is found:** Present to the user:
+     > "Found a stale state file for issue #{issue_id} (last updated: {updated_at}). Delete it and start fresh, resume anyway, or keep it and cancel?"
+     - **Delete / start fresh:** delete the file and proceed from scratch
+     - **Resume anyway:** treat as a non-stale resume (load the state and jump to stored phase)
+     - **Keep and cancel:** stop the skill entirely
+   - **If no matching file:** proceed normally
+5. **Summarise your understanding** to the user:
    - What the issue is asking for
    - Which repo(s) are affected and why
    - What the acceptance criteria are
    - Any ambiguities or open questions
-5. **Pause and wait for user confirmation** before proceeding to design
+6. **Pause and wait for user confirmation** before proceeding to design
 
 ### Phase 2: Architecture & Solution Design
 
@@ -92,10 +106,23 @@ Read `../../shared/api-dispatch.md`.
 3. **Consider cross-repo impacts** — if the change touches a shared-contract repo (see `PROJECT.md § Repository Dependency Order`), all downstream repos need corresponding updates
 4. **Draft a Design Document** (see Structured Output Templates below)
 5. **Present the design to the user** and wait for approval before writing any code
+6. **Write initial state file** — after the user approves the design, write the state file using the atomic write pattern from `../../shared/state-tracking.md`:
+   - Path: `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development/{branch-slug}.json`
+   - Set `phase=2`, `design_document_md` = the full approved design document text, `user_confirmations` with `design_approved` gate
+   - The `cr` field is `null` at this point; `worktrees` map is populated once worktrees are created in Phase 3
 
 ### Phase 3: Implementation
 
+**On resume with `phase=3`:** Check the worktree(s) in the `worktrees` map for commits made after `created_at`:
+```bash
+git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
+```
+- If commits exist: assume Phase 3 implementation is complete — jump to Phase 4 (CR creation check)
+- If no commits exist: re-delegate the implementation sub-agent from the beginning using `design_document_md` from the state file
+
 1. **For each affected repo**, read `../../shared/worktree-setup.md` and follow Steps 1–3 to create the worktree, resolve agent identity, and build the push URL. Use the branch naming convention below. All subsequent file edits, builds, tests, and git operations for this session use the worktree path, not the main clone.
+
+   After creating each worktree, update the state file: add the worktree path to the `worktrees` map and set `phase=3`.
 
 2. **For multi-repo changes**, implement in the dependency order defined in `PROJECT.md § Repository Dependency Order`
 3. **Delegate implementation** — read `./sub-agents/implementation.md` and dispatch via the Agent tool per logical unit
@@ -116,11 +143,18 @@ Read `../../shared/api-dispatch.md`.
 
 ### Phase 4: Change Request Creation
 
+**On resume with `phase=4`:** Check if a CR already exists for the branch:
+- Call `GET_CR` / list open CRs filtered by branch name
+- If a CR exists: populate `cr.*` fields in the state file, set `phase=5`, and jump to Phase 5
+- If no CR exists: proceed with CR creation below
+
 1. **Push the branch** using the authenticated push URL from worktree setup (see `../../shared/worktree-setup.md`). Do NOT use `git push origin` — use `$PUSH_URL` to avoid modifying remote config:
    ```bash
    git -C <WORKTREE_PATH> push -u "$PUSH_URL" {branch_name}
    ```
 2. **Create the CR** via `CREATE_CR` using the CR Description template
+
+   After CR creation, update the state file: set `cr.reference`, `cr.iid`, `cr.url`, `cr.project_id`, and `phase=5`.
 3. **Post a comment on the issue** linking to the CR:
    ```
    Implementation underway in {cr_web_url}
@@ -140,6 +174,8 @@ Read `../../shared/api-dispatch.md`.
 >
 > "No change since last poll" is NOT an exit condition — it means the pipeline is still running. Continue polling.
 > If you exit this loop, you MUST announce: "Exiting CI polling loop because: {reason}."
+
+**State reconcile (top of every iteration):** At the start of each poll iteration, read the state file and reconcile `cr.*` and `worktrees` from the file. If `loop` is present, update `loop.last_poll_at` = now; if `loop` is absent, write `loop` as `null` — Phase 6 will initialize it. Write the state file using the atomic write pattern. Do NOT change the `phase` field during mid-loop reconciliation.
 
 1. **Poll pipeline status** — check `GET_CR_PIPELINES` every 60 seconds until status is `success` or `failed`
 2. **On pipeline failure:**
@@ -166,12 +202,12 @@ Read `../../shared/api-dispatch.md`.
 > "One cycle completed with no activity" is NOT an exit condition. Keep polling.
 > If you exit this loop, you MUST announce: "Exiting review feedback loop because: {reason}."
 
-1. **Initialise tracking state** (once, when entering Phase 6 for the first time):
-   - `last_checked_at` = current timestamp (ISO 8601)
-   - `review_round` = 0
-   - `max_review_rounds` = 5
+1. **Initialise or reconcile tracking state:**
+   - **If entering Phase 6 for the first time** (no state file or `loop.review_round` is absent): set `last_checked_at` = now, `review_round` = 0, `max_review_rounds` = 5; update state file with `phase=6`
+   - **On resume (state file has `phase=6`):** restore `last_checked_at`, `review_round`, `max_review_rounds`, and `skipped_items[]` from the state file — do not reset them
 
 2. **Poll every 90 seconds:**
+   **State reconcile (top of every iteration):** Read the state file and reconcile `loop.*`, `cr.*`, `worktrees`, and `skipped_items[]`. Update `loop.last_poll_at` = now and write the state file. Do NOT change the `phase` field.
    a. Fetch CR details via `GET_CR`
    b. **If `state` is `merged`:** Notify the user. Proceed to Phase 7.
    c. **If `state` is `closed`:** Notify the user that the CR was closed unexpectedly. Proceed to Phase 7.
@@ -185,7 +221,7 @@ Read `../../shared/api-dispatch.md`.
 3. **If no new actionable feedback:** Update `last_checked_at` = now. Wait 90 seconds. Return to step 2.
 
 4. **If new actionable feedback is found:**
-   a. Increment `review_round`
+   a. Increment `review_round`. Write the state file with the updated `review_round`.
    b. **If `review_round` > `max_review_rounds`:** Present a summary to the user — number of rounds completed, count of unresolved discussions, and links. Ask: "Do you want me to continue, take over manually, or stop?" Wait for user input. If stop, proceed to Phase 7.
    c. Present the **Review Feedback Report** (see Structured Output Templates) to the user and wait for approval before making any changes
    d. Fetch CR changes via `GET_CR_DIFF` (paginate through all pages) to provide diff context to the sub-agent
@@ -211,6 +247,7 @@ Read `../../shared/api-dispatch.md`.
    j. For each item in `skipped` from the sub-agent output:
       - Post a reply via `REPLY_TO_CR_THREAD` with the sub-agent's `reply_text` (do **not** resolve the thread — leave it open for the reviewer)
       - Present the reason to the user and ask for guidance
+      - Write the state file with the updated `skipped_items[]`.
    k. Update `last_checked_at` = now
    l. **Return to Phase 5** (the push triggered a new CI pipeline — monitor it before checking reviews again)
 
@@ -225,13 +262,18 @@ This phase runs when the CR reaches a terminal state (merged, closed, or user st
    ```
    Repeat for each repo. Clean up stale entries with `git worktree prune`.
 
-2. **Present a final status report** to the user:
+2. **Delete the state file:**
+   ```bash
+   rm -f "<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development/{branch-slug}.json"
+   ```
+
+3. **Present a final status report** to the user:
    - CR final state (merged / closed / stopped by user)
    - Total review rounds completed
    - Total CI fix rounds completed
    - Link to the CR
 
-3. **Offer to close the issue** (if CR was merged):
+4. **Offer to close the issue** (if CR was merged):
    - "The CR has been merged. Would you like me to close issue #{issue_id}?"
    - If yes, call `CLOSE_ISSUE`
 
