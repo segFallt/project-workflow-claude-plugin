@@ -608,6 +608,12 @@ Check if `CLAUDE.md` exists in the project root.
 - If it does **not** exist: create it as an empty file, then append the section below.
 - If it **already exists**: check whether `## Project Workflows Configuration` heading is present. If it is, skip and tell the user. If not, append the section.
 
+**Gitignore update:** Check for a `.gitignore` file in the project root. If it exists, check whether `.claude/project-state/` is already present. If not, append the following line to `.gitignore`:
+```
+.claude/project-state/
+```
+If `.gitignore` does not exist, create it with this single line. This ensures runtime state files are never accidentally committed.
+
 Append verbatim:
 
 ```
@@ -746,6 +752,8 @@ Handle each option:
 
 **Something else:**
 - Ask the user to describe the change. Make the edit directly.
+
+**Gitignore check (always run in update mode):** After completing any update action, check for a `.gitignore` file in the project root. If it exists and does not already contain `.claude/project-state/`, append the line. If `.gitignore` does not exist, create it with this single line. This is idempotent and safe to run on every update-mode invocation.
 
 ### U3: Version Mismatch
 
