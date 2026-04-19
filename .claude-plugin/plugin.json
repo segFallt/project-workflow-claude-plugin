@@ -1,7 +1,7 @@
 {
   "name": "project-workflows",
   "description": "Reusable workflow skills for code review, development, testing, and issue management across any project",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": {
     "name": "project-workflows"
   },
