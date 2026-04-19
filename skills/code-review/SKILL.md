@@ -36,7 +36,7 @@ Before running this skill, ensure the following are in place:
 
 ## Environment Setup
 
-Read `../../shared/environment-setup.md`.
+Read `../../shared/environment-setup.md` and `../../shared/state-tracking.md`.
 
 ### Review Token
 
@@ -90,6 +90,16 @@ This skill operates in two phases:
 
 > **Note on `/loop` integration:** When this skill is invoked via `/loop` (e.g., `/loop 2m /cr-review`), each invocation runs Phase 1 (one sweep) and then Phase 2 (monitor until tracking list is empty). The `/loop` skill handles re-invoking the entire cycle at the specified interval to discover new CRs. You do NOT need to loop Phase 1 yourself — but you MUST complete Phase 2's monitoring loop fully before the invocation ends.
 
+0. **Hydrate tracking list from state file** — before sweeping, check if a state file exists:
+   - Resolve `<PRIMARY_REPO_LOCAL_PATH>` as the `local_path` of the first repo in `PROJECT.md § Repository Dependency Order`
+   - Read `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json` via Python 3 (see `../../shared/state-tracking.md` for the read pattern)
+   - If the file exists and is valid:
+     - For each entry in `tracked_crs`, call `GET_CR` to check current state
+     - Remove entries where `state` is `merged` or `closed` (these were resolved since the last session). **Do not remove `approved` entries** — those are still open and may need re-review
+     - Write the pruned list back to the state file atomically
+   - If the file does not exist: proceed with an empty tracking list
+   - If the file is corrupt (JSON parse error): warn one line, delete the file, proceed with empty list
+
 1. **Fetch open CRs** — call the `LIST_OPEN_CRS` operation
 2. **For each CR**, evaluate skip conditions (see below)
 3. **For non-skipped CRs**, check deduplication:
@@ -108,7 +118,7 @@ This skill operates in two phases:
    c. `praise` findings remain in the summary comment only — do NOT post inline comments for praise
 8. **Approve or revoke** based on verdict:
    - If verdict is `approve` → call `APPROVE_CR`
-   - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1)
+   - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1); write the updated tracking list to `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json` using the atomic write pattern from `../../shared/state-tracking.md`
 9. **Proceed to Phase 2** when all CRs have been processed
 
 ### Phase 2: Feedback Monitoring Loop
@@ -125,10 +135,22 @@ This skill operates in two phases:
 
 After the sweep, monitor all CRs in the tracking list until each is resolved. The Phase 1 dedup logic (`<!-- claude-review -->` marker check) applies only to the sweep; Phase 2 uses `last_review_at` timestamps for activity detection.
 
+**State reconcile (top of every iteration):** At the start of each poll iteration (`<PRIMARY_REPO_LOCAL_PATH>` resolved as in step 0 above):
+1. Read `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json` via Python 3
+2. Reconcile `tracked_crs` — add any CRs present in the file but not in memory; remove from memory any CRs not in the file
+3. Update `updated_at` = now and write the state file atomically
+4. If the file does not exist, write the current in-memory `tracked_crs` to disk immediately
+
 1. **Poll every 90 seconds** — for each tracked CR:
    a. Fetch CR details via `GET_CR`
-   b. **If `state` is `merged`:** Log the merge and remove from tracking list
-   c. **If `state` is `closed`:** Log the closure and remove from tracking list
+   b. **If `state` is `merged`:** Log the merge and remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, **delete the state file**:
+      ```bash
+      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json"
+      ```
+   c. **If `state` is `closed`:** Log the closure and remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, **delete the state file**:
+      ```bash
+      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json"
+      ```
    d. **If the CR has merge conflicts** (check the conflict field per the API skill's Field Reference): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
 
 2. **Detect author activity** — a CR has new activity if ANY of:
@@ -139,7 +161,7 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
 
 4. **If new activity is detected on a CR:**
    a. Increment `review_round`
-   b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list. Continue loop for remaining CRs.
+   b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list. Write the updated tracking list to the state file. Continue loop for remaining CRs.
    c. Fetch CR changes (full diff) via `GET_CR_DIFF` (paginate through all pages)
    d. Fetch linked issues via `GET_CR_LINKED_ISSUES`
    e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
@@ -150,7 +172,7 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
       - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author)
       - For issues that persist from the previous round, post a new inline comment rather than replying to the old thread (new code positions may have shifted)
    h. **Approve or revoke** based on new verdict:
-      - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list
+      - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, delete the state file.
       - If verdict is `request_changes` → call `UNAPPROVE_CR`; update `last_review_at` = now; continue tracking
    i. Return to step 1
 

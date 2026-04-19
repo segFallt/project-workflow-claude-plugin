@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-04-19
+
+### Added
+
+- `shared/state-tracking.md` — new shared directive documenting the state persistence pattern: primary-repo path rule, branch-slug derivation (`/` → `-`), atomic-write bash pattern (`mktemp` + `mv -f`), Python 3 read pattern, stale-file detection (> 24h OR CR merged/closed when `cr.iid` present), corrupt-file handling (warn + delete + proceed fresh), and concurrency note
+- `development` skill — Phase 1 now scans `project-state/development/*.json` to detect in-flight sessions by `issue.id`; prompts `resume / restart / cancel` for non-stale files and `delete / resume anyway / keep and cancel` for stale ones
+- `development` skill — Phase 3 mid-phase recovery: if resuming with `phase=3`, checks worktree for commits after `created_at`; if found, skips to Phase 4; otherwise re-delegates implementation sub-agent using the stored design doc
+- `development` skill — Phase 4 resume check: detects existing CR for the branch and jumps to Phase 5 if found
+- `development` skill — state writes at: end of Phase 2 (design approved), end of Phase 4 (CR created), every Phase 5 and Phase 6 poll iteration, every `review_round` increment, every `skipped_items` append, every phase transition
+- `development` skill — Phase 5 and Phase 6 loop directives now reconcile `loop.*`, `cr.*`, `worktrees`, and `skipped_items[]` from the state file at the top of each iteration (phase is never changed by mid-loop reconciliation)
+- `development` skill — Phase 7 deletes the state file after worktree removal
+- `code-review` skill — Phase 1 now hydrates `tracked_crs` from `tracking.json` on entry; reconciles each entry via `GET_CR`, dropping only `merged`/`closed` entries
+- `code-review` skill — Phase 2 reads and writes `tracking.json` on every poll iteration; deletes the file when `tracked_crs` becomes empty
+- `init` skill — Step 9 now idempotently ensures `.claude/project-state/` is present in the consuming project's `.gitignore`
+
 ## [1.3.1] - 2026-03-27
 
 ### Removed
