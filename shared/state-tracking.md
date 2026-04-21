@@ -9,7 +9,7 @@ This directive documents the shared state persistence pattern used by the `devel
 State files live in the **primary repo's main checkout**, never inside a worktree:
 
 ```
-<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/
+<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/
 ```
 
 > **Important:** The worktree is cleaned up in Phase 7; the state file must outlive it until explicitly deleted.
@@ -19,14 +19,14 @@ State files live in the **primary repo's main checkout**, never inside a worktre
 ### File Layout
 
 ```
-.claude/project-state/
+.state-tracking/
   development/
     {branch-slug}.json     — one file per in-flight branch
   code-review/
     tracking.json          — single file for the code-review tracking list
 ```
 
-State files are gitignored (see `init` skill — Step 9 adds `.claude/project-state/` to `.gitignore`).
+State files are gitignored (see `init` skill — Step 9 adds `.state-tracking/` to `.gitignore` and creates the directory).
 
 ---
 
@@ -43,7 +43,7 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
 
 ### State File Schema
 
-#### Development — `project-state/development/{branch-slug}.json`
+#### Development — `.state-tracking/development/{branch-slug}.json`
 
 ```json
 {
@@ -101,7 +101,7 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
 - `skipped_items` is appended whenever the review-feedback sub-agent skips an item
 - `user_confirmations` is an audit log of user-approved gates
 
-#### Code-review — `project-state/code-review/tracking.json`
+#### Code-review — `.state-tracking/code-review/tracking.json`
 
 ```json
 {
@@ -130,7 +130,7 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
 Always write state files via atomic replace using `mktemp` + `mv -f`:
 
 ```bash
-STATE_DIR="<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development"
+STATE_DIR="<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development"
 STATE_FILE="$STATE_DIR/{branch-slug}.json"
 mkdir -p "$STATE_DIR"
 JSON_PAYLOAD='{ ... }'
@@ -141,7 +141,7 @@ mv -f "$TMP" "$STATE_FILE"
 
 For `code-review`, the equivalent paths are:
 ```bash
-STATE_DIR="<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review"
+STATE_DIR="<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review"
 STATE_FILE="$STATE_DIR/tracking.json"
 # Apply the same mkdir -p / mktemp + mv -f pattern above with these paths
 ```

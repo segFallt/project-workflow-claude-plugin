@@ -608,11 +608,13 @@ Check if `CLAUDE.md` exists in the project root.
 - If it does **not** exist: create it as an empty file, then append the section below.
 - If it **already exists**: check whether `## Project Workflows Configuration` heading is present. If it is, skip and tell the user. If not, append the section.
 
-**Gitignore update:** Check for a `.gitignore` file in the project root. If it exists, check whether `.claude/project-state/` is already present. If not, append the following line to `.gitignore`:
+**Gitignore update:** Check for a `.gitignore` file in the project root. If it exists, check whether `.state-tracking/` is already present. If not, append the following line to `.gitignore`:
 ```
-.claude/project-state/
+.state-tracking/
 ```
-If `.gitignore` does not exist, create it with this single line. This ensures runtime state files are never accidentally committed.
+If `.gitignore` does not exist, create it with this single line. This ensures runtime state files are never accidentally committed. Do NOT remove or modify any other pre-existing lines in `.gitignore`.
+
+**State directory:** Run `mkdir -p <PRIMARY_REPO_LOCAL_PATH>/.state-tracking/` to create the directory up-front so it exists before any skill writes state.
 
 Append verbatim:
 
@@ -644,6 +646,8 @@ Config directory: `.claude/project-config/`
 | Gitea API reference | `project-workflows:gitea-api` |
 
 > **Note:** Fill in `PROJECT.md` first — it is the hub all other files and skills reference.
+
+State directory (auto-created, gitignored): `.state-tracking/` — runtime state for `development` and `code-review` skills.
 ```
 
 ---
@@ -753,7 +757,7 @@ Handle each option:
 **Something else:**
 - Ask the user to describe the change. Make the edit directly.
 
-**Gitignore check (always run in update mode):** After completing any update action, check for a `.gitignore` file in the project root. If it exists and does not already contain `.claude/project-state/`, append the line. If `.gitignore` does not exist, create it with this single line. This is idempotent and safe to run on every update-mode invocation.
+**Gitignore check (always run in update mode):** After completing any update action, check for a `.gitignore` file in the project root. If it exists and does not already contain `.state-tracking/`, append the line. If `.gitignore` does not exist, create it with this single line. Do NOT remove or modify any other pre-existing lines in `.gitignore`. This is idempotent and safe to run on every update-mode invocation.
 
 ### U3: Version Mismatch
 
