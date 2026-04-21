@@ -92,7 +92,7 @@ This skill operates in two phases:
 
 0. **Hydrate tracking list from state file** — before sweeping, check if a state file exists:
    - Resolve `<PRIMARY_REPO_LOCAL_PATH>` as the `local_path` of the first repo in `PROJECT.md § Repository Dependency Order`
-   - Read `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json` via Python 3 (see `../../shared/state-tracking.md` for the read pattern)
+   - Read `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` via Python 3 (see `../../shared/state-tracking.md` for the read pattern)
    - If the file exists and is valid:
      - For each entry in `tracked_crs`, call `GET_CR` to check current state
      - Remove entries where `state` is `merged` or `closed` (these were resolved since the last session). **Do not remove `approved` entries** — those are still open and may need re-review
@@ -118,7 +118,7 @@ This skill operates in two phases:
    c. `praise` findings remain in the summary comment only — do NOT post inline comments for praise
 8. **Approve or revoke** based on verdict:
    - If verdict is `approve` → call `APPROVE_CR`
-   - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1); write the updated tracking list to `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json` using the atomic write pattern from `../../shared/state-tracking.md`
+   - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1); write the updated tracking list to `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` using the atomic write pattern from `../../shared/state-tracking.md`
 9. **Proceed to Phase 2** when all CRs have been processed
 
 ### Phase 2: Feedback Monitoring Loop
@@ -136,7 +136,7 @@ This skill operates in two phases:
 After the sweep, monitor all CRs in the tracking list until each is resolved. The Phase 1 dedup logic (`<!-- claude-review -->` marker check) applies only to the sweep; Phase 2 uses `last_review_at` timestamps for activity detection.
 
 **State reconcile (top of every iteration):** At the start of each poll iteration (`<PRIMARY_REPO_LOCAL_PATH>` resolved as in step 0 above):
-1. Read `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json` via Python 3
+1. Read `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` via Python 3
 2. Reconcile `tracked_crs` — add any CRs present in the file but not in memory; remove from memory any CRs not in the file
 3. Update `updated_at` = now and write the state file atomically
 4. If the file does not exist, write the current in-memory `tracked_crs` to disk immediately
@@ -145,11 +145,11 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
    a. Fetch CR details via `GET_CR`
    b. **If `state` is `merged`:** Log the merge and remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, **delete the state file**:
       ```bash
-      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json"
+      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
       ```
    c. **If `state` is `closed`:** Log the closure and remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, **delete the state file**:
       ```bash
-      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/code-review/tracking.json"
+      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
       ```
    d. **If the CR has merge conflicts** (check the conflict field per the API skill's Field Reference): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
 

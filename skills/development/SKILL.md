@@ -73,7 +73,7 @@ Read `../../shared/api-dispatch.md`.
 2. **Fetch the issue** via `GET_ISSUE`
 3. **Fetch issue comments** to capture any prior discussion or decisions
 4. **Scan for existing state file** — after fetching the issue, read `../../shared/state-tracking.md` for the full state pattern, then:
-   - Scan all files in `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development/` (if the directory exists)
+   - Scan all files in `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/` (if the directory exists)
    - For each `.json` file found, read it via Python 3 and check if `issue.id` matches the current issue's ID
    - **If a matching non-stale file is found:** Present to the user:
      > "Found an existing state file for issue #{issue_id} (branch: `{branch}`, phase: {phase}, last updated: {updated_at}). Resume from where we left off, restart from scratch, or cancel?"
@@ -107,7 +107,7 @@ Read `../../shared/api-dispatch.md`.
 4. **Draft a Design Document** (see Structured Output Templates below)
 5. **Present the design to the user** and wait for approval before writing any code
 6. **Write initial state file** — after the user approves the design, write the state file using the atomic write pattern from `../../shared/state-tracking.md`:
-   - Path: `<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development/{branch-slug}.json`
+   - Path: `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/{branch-slug}.json`
    - Set `phase=2`, `design_document_md` = the full approved design document text, `user_confirmations` with `design_approved` gate
    - The `cr` field is `null` at this point; `worktrees` map is populated once worktrees are created in Phase 3
 
@@ -264,7 +264,7 @@ This phase runs when the CR reaches a terminal state (merged, closed, or user st
 
 2. **Delete the state file:**
    ```bash
-   rm -f "<PRIMARY_REPO_LOCAL_PATH>/.claude/project-state/development/{branch-slug}.json"
+   rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/{branch-slug}.json"
    ```
 
 3. **Present a final status report** to the user:
