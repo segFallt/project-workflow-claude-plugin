@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-04-21
+
+### Changed
+
+- Relocated runtime state directory from `.claude/project-state/` to `.state-tracking/` across `shared/state-tracking.md`, `skills/development/SKILL.md`, and `skills/code-review/SKILL.md` — pulls frequent agent writes out of `.claude/` which otherwise holds relatively static configuration data
+- `init` skill Step 9 (Fresh Init) now registers `.state-tracking/` in `.gitignore` and creates the directory via `mkdir -p`; no longer registers `.claude/project-state/` (existing entries for the old path are left untouched)
+- `init` skill Update Mode gitignore check updated to reference `.state-tracking/`
+- `init` skill CLAUDE.md append block now includes a bullet documenting the state directory
+
 ## [1.4.1] - 2026-04-19
 
 ### Fixed
