@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New `plain-language` guidance skill (`/project-workflows:plain-language`). A user-invoked passive reference (`disable-model-invocation: true`) that steers generated prose and formatting away from patterns commonly read as LLM-written — filler vocabulary, negative parallelism, rule-of-three, over-bolding, em-dash and Title Case overuse. Documented in the README skills table (#27). The skills-count line and any `plugin.json` bump are reconciled once at release (see #37).
+- `shared/documentation-taxonomy.md` — canonical, project-agnostic reference for the documentation framework (epic #28): the BRD/PRD/SDD/TSD taxonomy, the `lite`/`standard`/`full` profiles (default `standard`), and the per-change escalation matrix, each defined once as the single source of truth read by the doc-authoring sub-agent (R2), `init` profile storage (R6), and the author decision guide (R8). Foundation only — no logic (#29).
 
 ### Fixed
 
