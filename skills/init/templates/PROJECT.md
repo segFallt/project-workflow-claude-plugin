@@ -354,6 +354,18 @@ cd <WORKTREES_BASE>/<SERVICE_3_REPO>
 | Diagrams | `<WORKTREES_BASE>/<DOCS_REPO>/docs/architecture/diagrams/` |
 | Implementation plans | |
 
+### Documentation Profile
+
+`standard` — one of `lite` / `standard` / `full` (default `standard`). Sets which documents this project maintains (see `shared/documentation-taxonomy.md`).
+
+### Docs Root
+
+`docs/`
+
+### Spec Sources
+
+> [FILL IN] PRD directory, `.feature` globs, and/or issue references used by `testing-spec` — or "not configured".
+
 ---
 
 ## Git Tags
