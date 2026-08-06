@@ -19,7 +19,7 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 | `plain-language` | Guidance to keep generated prose from reading as LLM-written (user-invoked) |
 | `documentation` | Author and update right-sized project docs (BRD/PRD/SDD/TSD) from templates |
 | `testing-spec` | Run integration tests generated from specs — PRDs, issues, and Gherkin `.feature` criteria |
-| `testing-prd` | Run integration tests generated dynamically from PRDs (superseded by `testing-spec`) |
+| `testing-prd` | **Deprecated** (removed next major) — superseded by `testing-spec`. Runs integration tests generated dynamically from PRDs |
 | `testing-static` | Run integration tests using a static test matrix |
 | `gitlab-api` | Reference skill for GitLab REST API operations (MRs, issues, notes, branches) |
 | `github-api` | Reference skill for GitHub REST API operations (PRs, issues, reviews, branches) |
