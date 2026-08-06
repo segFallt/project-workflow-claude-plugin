@@ -158,7 +158,7 @@ Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent to
 
 ### Bug Report
 
-```markdown
+````markdown
 ## Description
 
 {Clear 1-2 sentence description of the bug and its impact}
@@ -196,15 +196,26 @@ Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent to
 
 ## Acceptance Criteria
 
-- [ ] {Specific, testable criterion 1}
-- [ ] {Specific, testable criterion 2}
+Behavioural criteria as Gherkin scenarios — declarative, one behaviour each, not UI-coupled (see `skills/documentation/templates/gherkin-guide.md`):
+
+```gherkin
+Feature: {the capability affected by the bug}
+
+  Scenario: {the corrected behaviour}
+    Given {precondition}
+    When {the action or trigger}
+    Then {the expected outcome, replacing the buggy one}
+```
+
+### Definition of Done
+
 - [ ] Existing tests pass
 - [ ] New regression test added (if applicable)
-```
+````
 
 ### Feature Request
 
-```markdown
+````markdown
 ## Description
 
 {Clear 1-2 sentence description of the feature and the value it provides}
@@ -226,8 +237,19 @@ Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent to
 
 ## Acceptance Criteria
 
-- [ ] {Specific, testable criterion 1}
-- [ ] {Specific, testable criterion 2}
+Behavioural criteria as Gherkin scenarios — declarative, one behaviour each, not UI-coupled (see `skills/documentation/templates/gherkin-guide.md`):
+
+```gherkin
+Feature: {the capability this feature provides}
+
+  Scenario: {behaviour the feature enables}
+    Given {precondition}
+    When {the action}
+    Then {the observable outcome}
+```
+
+### Definition of Done
+
 - [ ] Unit tests added for new logic
 - [ ] Integration test added or updated
 - [ ] Documentation updated (if applicable)
@@ -238,11 +260,11 @@ Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent to
 
 **Affected files (preliminary):**
 {list from sub-agent output}
-```
+````
 
 ### Task
 
-```markdown
+````markdown
 ## Description
 
 {Clear 1-2 sentence description of the task and why it is needed}
@@ -267,11 +289,22 @@ Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent to
 
 ## Acceptance Criteria
 
-- [ ] {Specific, testable criterion 1}
-- [ ] {Specific, testable criterion 2}
+Behavioural criteria as Gherkin scenarios — declarative, one behaviour each, not UI-coupled (see `skills/documentation/templates/gherkin-guide.md`). Omit this block for a task with no behavioural change; the Definition of Done then carries verification.
+
+```gherkin
+Feature: {the capability this task affects}
+
+  Scenario: {behaviour or outcome the task produces}
+    Given {precondition}
+    When {the action}
+    Then {the expected result}
+```
+
+### Definition of Done
+
 - [ ] Lint passes (`{repo-specific lint command}`)
 - [ ] Tests pass (`{repo-specific test command}`)
-```
+````
 
 ---
 
