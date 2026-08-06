@@ -130,7 +130,7 @@ git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
    - For large changes within a single repo, split by layer (e.g., separate sub-agents for model changes vs. handler changes)
 4. **After each sub-agent completes**, run lint and tests directly:
    - See the **Commands** subsection for each repo in `PROJECT.md § Repository Locations`
-5. **If test writing is complex** (many test cases, significant integration test setup, or the acceptance criteria map to a large number of distinct cases), read `./sub-agents/test-writing.md` and dispatch via the Agent tool
+5. **If test writing is complex** (many test cases, significant integration test setup, or the acceptance criteria map to a large number of distinct cases), read `./sub-agents/test-writing.md` and dispatch via the Agent tool. **You** derive the concrete test cases from the issue's acceptance criteria first — where these are Gherkin, translate each `Scenario`'s `Given/When/Then` into specific test cases (citing the source scenario) and pass those as the `{specific test cases}`. The test-writing sub-agent receives derived cases; it does not parse Gherkin itself.
 6. **Fix any lint or test failures** — if a failure is non-trivial, delegate the fix to an implementation sub-agent with the error context
 7. **Commit incrementally** as each logical unit is complete:
    ```bash
@@ -304,6 +304,7 @@ Use lowercase, hyphens only, no special characters. Keep `{short-description}` t
 | Delegate to sub-agent | Do directly |
 |----------------------|-------------|
 | Code implementation (Go, Python, TypeScript) | Repository host API calls |
+| Documentation authoring (`doc-authoring` sub-agent) | |
 | Test writing | Branch creation and git operations |
 | Config file changes | Lint and test execution after implementation |
 | Proto definition changes | CI pipeline monitoring |
@@ -311,6 +312,7 @@ Use lowercase, hyphens only, no special characters. Keep `{short-description}` t
 | Code review feedback fixes | Review feedback polling and discussion management |
 | | Discussion resolution (reply + resolve API calls) |
 | | User interaction and design decisions |
+| | Deriving test cases from the issue's acceptance criteria |
 
 ---
 
@@ -352,27 +354,17 @@ Read `./sub-agents/review-feedback.md` and dispatch via the Agent tool, substitu
 
 ## Requirements Documentation
 
-When your implementation adds or changes any of the following, update the relevant document in the documentation repo (see `PROJECT.md § Design Documentation` for paths):
+Do not decide which documents a change needs here — delegate that to the shared `doc-authoring` sub-agent (the single owner of documentation sizing and authoring). Read `../../shared/sub-agents/doc-authoring.md` and dispatch it via the Agent tool, passing the change description, the Phase 2 code-exploration output, the project's documentation profile and docs root (`PROJECT.md § Design Documentation`), and the target repo. It reads the escalation matrix in `shared/documentation-taxonomy.md`, drafts or updates the required documents from the templates, writes any Gherkin acceptance criteria, and returns their registration entries.
 
-| Change type | Document to update |
-|------------|-------------------|
-| New API endpoint | Gateway architecture doc — API routes section |
-| Database schema change | Data model doc — database schema section |
-| New environment variable | Relevant per-service architecture doc; also update `.env.example` in the deploy repo |
-| New external dependency | Relevant per-service architecture doc — tech stack section |
-| New gRPC method or message | Proto architecture doc — gRPC contract section; regenerate stubs |
-| Architecture change | System overview doc and relevant per-service docs |
-
-Instructions for updating design docs:
-1. Read the current document first
-2. Make surgical edits — add only what changed, do not restructure unrelated sections
-3. Commit the doc update in the same branch as the implementation
+Commit the authored/updated documents in the same branch as the implementation. Two related **code** artifacts remain the implementation's responsibility (they are not documents): update `.env.example` when you add an environment variable, and regenerate stubs when a proto contract changes.
 
 ---
 
 ## Structured Output Templates
 
 ### Design Document
+
+An **issue-scoped implementation planner** — not a persisted framework document. Frame it against the SDD/TSD tiers: when the change's significance warrants a persisted framework SDD or TSD, the `doc-authoring` sub-agent authors that document and this Design Document **links to it** rather than duplicating its content.
 
 Present this to the user for approval before writing any code:
 
@@ -396,7 +388,7 @@ Present this to the user for approval before writing any code:
 {Brief note on any alternatives evaluated and why the chosen approach is preferred. Omit if no meaningful alternatives exist.}
 
 ### Testing Strategy
-{What will be tested, at what level (unit / integration / E2E), and how the acceptance criteria map to test cases}
+{What will be tested, at what level (unit / integration / E2E). Derive test cases from the issue's acceptance criteria — where these are Gherkin, map each `Scenario` (its `Given/When/Then`) to one or more test cases and cite the source scenario for traceability.}
 
 ### Migration / Deployment Notes
 {Any migration steps, environment variable additions, or deployment order requirements. "None" if not applicable.}
@@ -433,9 +425,9 @@ Closes #{issue_id}
 - [ ] Lint passes (`{repo-specific lint command}`)
 - [ ] Unit tests pass
 - [ ] Integration tests pass (if applicable)
-- [ ] Acceptance criteria from #{issue_id} met:
-  - [ ] {criterion 1}
-  - [ ] {criterion 2}
+- [ ] Acceptance criteria from #{issue_id} met (one line per criterion; for Gherkin acceptance criteria, cite the `Scenario` each item verifies):
+  - [ ] {criterion 1 — or "Scenario: {name}"}
+  - [ ] {criterion 2 — or "Scenario: {name}"}
 
 ## Screenshots
 
