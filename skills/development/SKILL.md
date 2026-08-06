@@ -150,7 +150,7 @@ git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
 
 1. **Push the branch** using the authenticated push URL from worktree setup (see `../../shared/worktree-setup.md`). Do NOT use `git push origin` — use `$PUSH_URL` to avoid modifying remote config:
    ```bash
-   git -C <WORKTREE_PATH> push -u "$PUSH_URL" {branch_name}
+   git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
    ```
 2. **Create the CR** via `CREATE_CR` using the CR Description template
 
