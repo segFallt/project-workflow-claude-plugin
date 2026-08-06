@@ -75,6 +75,7 @@ All API calls in this skill use the following **standardized operation names**. 
 - `APPROVE_CR` — approve a CR
 - `UNAPPROVE_CR` — remove approval from a CR
 - `RESOLVE_CR_THREAD` — resolve/unresolve a discussion thread
+- `REPLY_TO_CR_THREAD` — reply to an existing discussion thread
 - `GET_CR_LINKED_ISSUES` — get issues linked to/closed by a CR
 
 ---
@@ -85,6 +86,13 @@ This skill operates in two phases:
 
 - **Phase 1: Initial Review Sweep** — one pass through all open CRs. Use the **`/loop` skill** to discover new CRs periodically (e.g., `/loop 2m /cr-review`). The loop handles finding *new* CRs; Phase 2 handles tracking CRs that already received feedback.
 - **Phase 2: Feedback Monitoring Loop** — after the sweep, actively polls any CR that received `request_changes` until it is merged, closed, or approved.
+
+**Activity-detection rule (referenced by both phases):** Relative to a **baseline timestamp**, a CR has new activity if EITHER (a) the CR's `updated_at` is newer than the baseline (code was pushed or metadata changed), OR (b) a comment — not authored by the review bot (this skill's own `<!-- claude-review -->` output) — has `created_at` after the baseline; in **Phase 2**, a non-bot discussion reply counts as well. The baseline differs by phase: **Phase 1** uses the `created_at` of the most recent comment containing the `<!-- claude-review -->` marker (found via `GET_CR_COMMENTS`, paginated through all pages) — it evaluates comments only, not discussions; **Phase 2** uses the tracked CR's `last_review_at`. If there is new activity → re-review; otherwise → skip (already reviewed).
+
+**Tracking-list persistence (referenced by both phases):** After any change to `tracked_crs` (adding or removing a CR), write the updated list to `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` using the atomic write pattern from `../../shared/state-tracking.md`. When `tracked_crs` becomes empty, delete the state file:
+```bash
+rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
+```
 
 ### Phase 1: Initial Review Sweep
 
@@ -102,20 +110,13 @@ This skill operates in two phases:
 
 1. **Fetch open CRs** — call the `LIST_OPEN_CRS` operation
 2. **For each CR**, evaluate skip conditions (see below)
-3. **For non-skipped CRs**, check deduplication:
-   - Fetch existing comments via `GET_CR_COMMENTS` (paginate through all pages)
-   - If any comment body contains `<!-- claude-review -->`, find the most recent such comment's `created_at` timestamp
-   - **Re-review** if ANY of these are true:
-     - CR `updated_at` is newer than the review comment's `created_at` (code was pushed or metadata changed)
-     - Any non-bot comment (i.e., not authored by the review bot) was created after the review comment's `created_at` (new human comments)
-   - Otherwise, **skip** (already reviewed, no new activity)
+3. **For non-skipped CRs**, check deduplication — apply the **Activity-detection rule** (above) with the Phase 1 baseline (the most recent `<!-- claude-review -->` comment's `created_at`). Re-review if there is new activity; otherwise skip.
 4. **Fetch CR changes** (full diff) via `GET_CR_DIFF` (paginate through all pages) for CRs that need review
 5. **Fetch linked issues** — call `GET_CR_LINKED_ISSUES` for each CR. If any issues are returned, note their title, description, labels, and URL to pass to the sub-agent
 6. **Delegate to the Initial Review Sub-Agent** — read `./sub-agents/initial-review.md` and dispatch via the Agent tool, passing the diff, CR metadata, review criteria, and any linked issue context
 7. **Post findings** based on sub-agent output:
    a. Post the summary comment via `POST_CR_COMMENT` using the Summary Comment template
-   b. For each `critical`, `warning`, or `suggestion` finding that has a non-null `file` and `line`, post an **inline comment** via `POST_CR_INLINE_COMMENT` (see Inline Comments formatting below). Every finding with a determinable file and line MUST be posted inline — do not silently fall back to summary-only.
-   c. `praise` findings remain in the summary comment only — do NOT post inline comments for praise
+   b. Post inline comments per the **Inline Comments** section below (canonical rule for which findings go inline, praise handling, and post-failure fallback)
 8. **Approve or revoke** based on verdict:
    - If verdict is `approve` → call `APPROVE_CR`
    - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1); write the updated tracking list to `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` using the atomic write pattern from `../../shared/state-tracking.md`
@@ -127,7 +128,6 @@ This skill operates in two phases:
 > This is a long-running polling loop. You MUST keep polling until the tracking list is empty.
 > The ONLY permitted exit conditions are:
 > 1. The tracking list is empty (all monitored CRs are approved, merged, or closed)
-> 2. `review_round` > 5 for a specific CR → remove that CR from the list and continue the loop for remaining CRs
 >
 > "No new activity on any CR" is NOT an exit condition — it means authors haven't responded yet. Continue polling.
 > "One poll cycle completed" is NOT an exit condition. Keep polling.
@@ -143,36 +143,28 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
 
 1. **Poll every 90 seconds** — for each tracked CR:
    a. Fetch CR details via `GET_CR`
-   b. **If `state` is `merged`:** Log the merge and remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, **delete the state file**:
-      ```bash
-      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
-      ```
-   c. **If `state` is `closed`:** Log the closure and remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, **delete the state file**:
-      ```bash
-      rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
-      ```
+   b. **If `state` is `merged`:** Log the merge, remove from tracking list, and **persist the tracking list** (see the Tracking-list persistence rule above — deletes the state file if `tracked_crs` becomes empty)
+   c. **If `state` is `closed`:** Log the closure, remove from tracking list, and **persist the tracking list** (per the Tracking-list persistence rule above)
    d. **If the CR has merge conflicts** (check the conflict field per the API skill's Field Reference): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
 
-2. **Detect author activity** — a CR has new activity if ANY of:
-   - `updated_at` is newer than `last_review_at` (new commits pushed)
-   - Any non-bot comment or discussion reply exists with `created_at` after `last_review_at`
+2. **Detect author activity** — apply the **Activity-detection rule** (above) with the Phase 2 baseline (`last_review_at`).
 
 3. **If no new activity on any tracked CR:** Wait 90 seconds. Return to step 1.
 
 4. **If new activity is detected on a CR:**
    a. Increment `review_round`
-   b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list. Write the updated tracking list to the state file. Continue loop for remaining CRs.
+   b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list and **persist the tracking list** (per the Tracking-list persistence rule above). Continue loop for remaining CRs.
    c. Fetch CR changes (full diff) via `GET_CR_DIFF` (paginate through all pages)
    d. Fetch linked issues via `GET_CR_LINKED_ISSUES`
    e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
    f. **Delegate to the Re-Review Sub-Agent** — read `./sub-agents/re-review.md` and dispatch via the Agent tool
    g. **Post updated findings and manage inline threads:**
       - Post the summary comment via `POST_CR_COMMENT` (include round number, see Comment Formatting)
-      - For each `critical`, `warning`, or `suggestion` finding with non-null `file` and `line`, post an inline comment via `POST_CR_INLINE_COMMENT`
-      - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author)
-      - For issues that persist from the previous round, post a new inline comment rather than replying to the old thread (new code positions may have shifted)
+      - Post inline comments per the **Inline Comments** section below
+      - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author). Skip the resolve where the host lacks the endpoint (Gitea below 1.26 — see the capability-gating note below); never error
+      - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api skill), post a new inline comment instead
    h. **Approve or revoke** based on new verdict:
-      - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, delete the state file.
+      - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list and **persist the tracking list** (per the Tracking-list persistence rule above)
       - If verdict is `request_changes` → call `UNAPPROVE_CR`; update `last_review_at` = now; continue tracking
    i. Return to step 1
 
@@ -228,7 +220,7 @@ Use this template for the summary comment on every reviewed CR. For Phase 1 (ini
 
 ```markdown
 <!-- claude-review -->
-## 🤖 Automated Code Review{If review_round > 1: " (Round {review_round})"}
+## Code Review{If review_round > 1: " (Round {review_round})"}
 
 **Verdict:** ✅ Approved / ❌ Changes Requested
 
@@ -257,8 +249,6 @@ Use this template for the summary comment on every reviewed CR. For Phase 1 (ini
 - [{x or space}] Naming conventions followed
 - [{x or space}] Linked issue addressed (if applicable)
 
----
-*Automated review by Claude Code — [view CR]({web_url})*
 ```
 
 > The `<!-- claude-review -->` marker on the first line is **required** — it's used for deduplication.
@@ -282,8 +272,10 @@ Severity emojis: 🚨 critical, ⚠️ warning, 💡 suggestion
 
 On re-review rounds (Phase 2), manage prior inline threads:
 - **Resolved issues:** If a prior `critical`/`warning`/`suggestion` inline thread is now addressed by the author, resolve the thread via `RESOLVE_CR_THREAD`
-- **Persisting issues:** Post a new inline comment at the current file/line position (do not reply to old threads — line numbers may have shifted)
+- **Persisting issues:** Reply to the mapped prior thread via `REPLY_TO_CR_THREAD` (from the sub-agent's `threads_to_reply`) rather than opening a duplicate thread. Fallback to a new inline comment when the line has moved far enough that the finding no longer maps to a prior thread, or when the host has no threaded-reply endpoint (Gitea below 1.27 — see the gitea-api skill). Never error.
 - **New issues:** Post new inline comments as normal
+
+> **Capability gating:** reply needs GitLab/GitHub or Gitea ≥ 1.27; resolve needs GitLab/GitHub or Gitea ≥ 1.26. Below those versions, fall back (new inline comment / skip resolve) — never error.
 
 ### Tone Guidelines
 

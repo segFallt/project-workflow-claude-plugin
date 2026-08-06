@@ -43,7 +43,7 @@ Read `../../shared/environment-setup.md` and `../../shared/trunk-branch.md`.
 
 ### Container Registry Configuration
 
-Read the **Container Registry** subsection of `PROJECT.md § Source Control` for the registry image variable names and login command. Set these variables in the deploy repo's `.env` before starting the stack. CI also pushes a `:commit-sha` tag alongside `:latest` — use the SHA tag to pin a specific build.
+Read `../../shared/testing-container-registry.md`.
 
 ### Docker Compose Startup Sequence and Model Selection
 

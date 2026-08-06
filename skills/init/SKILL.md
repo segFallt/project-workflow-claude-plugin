@@ -40,8 +40,9 @@ Tell the user:
 > - **PROJECT.md** — the central project reference (required for all skills)
 > - **.env / .env.example** — API token configuration
 > - **REVIEW-CRITERIA.md** — if you plan to use the `code-review` skill
-> - **TEST-MATRIX.md** — if you plan to use the `testing-static` or `testing-prd` skills
-> - **PRD-MANIFEST.md** — if you plan to use the `testing-prd` skill"
+> - **TEST-MATRIX.md** — if you plan to use the `testing-static`, `testing-spec`, or `testing-prd` skills
+> - **SPEC-MANIFEST.md** — if you plan to use the `testing-spec` skill
+> - **PRD-MANIFEST.md** — if you plan to use the legacy `testing-prd` skill"
 
 ---
 
@@ -63,10 +64,10 @@ From the answers, **derive automatically** (do not ask):
 - `GROUP_DASHBOARD`: `<instance>/groups/<group>` (GitLab) or `<instance>/orgs/<org>` (GitHub/Gitea)
 - Which API reference skill to mention: `project-workflows:gitlab-api` / `project-workflows:github-api` / `project-workflows:gitea-api`
 
-**Generate immediately:** Write `.claude/project-config/PROJECT.md` with the following content populated from the answers. Use `<!-- not-configured -->` as a single-line placeholder for sections not yet collected. The first line of the file **must** be the version stamp.
+**Generate immediately:** Write `.claude/project-config/PROJECT.md` with the following content populated from the answers. In the skeleton below, `{not-configured stanza}` marks a section not yet collected — when writing the file, expand each `{not-configured stanza}` to the exact two-line marker defined in the **Not-Configured Marker** reference section near the end of this skill. The skeleton's 14 `##` headings are exactly the canonical **Required Section Headings** (listed near the end) — keep every heading exactly as written, in order. The first line of the file **must** be the version stamp.
 
 ```
-<!-- pw-version: 1.0.1 -->
+<!-- pw-version: 1.3.0 -->
 # {project_name} — Project Reference
 
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns.
@@ -109,85 +110,73 @@ Once configured, see `project-workflows:{host}-api` skill for all API interactio
 
 ## Repository Locations
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Repository Dependency Order
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Container Registry
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Tech Stacks Per Repo
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Cross-Cutting Concerns
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Domain Concepts
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## API Endpoints
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Database Schema
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Concurrent Session Isolation
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Local Development
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Design Documentation
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Git Tags
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 ```
 
 Confirm to the user: "PROJECT.md created with your project identity and source control settings."
@@ -397,12 +386,9 @@ Generate:
 {if prd_directory was provided:
 Root: `{prd_directory}`
 
-Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` for extraction rules, test ID prefixes, and feature priorities. The `testing-prd` skill uses it to dynamically generate integration tests from your PRDs.
+Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` (or the more general `SPEC-MANIFEST.md`) for extraction rules, test ID prefixes, and feature priorities. The `testing-spec` skill (or the legacy `testing-prd`) uses these to generate integration tests from your specs.
 }
-{if prd_directory was 'none' or skipped:
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
-}
+{if prd_directory was 'none' or skipped: {not-configured stanza} }
 ```
 
 **API Endpoints** — Ask:
@@ -459,14 +445,28 @@ Generate:
 
 **Design Documentation** — Ask:
 > "Where are your architecture docs, diagrams, and implementation plans stored? Provide paths (relative to worktrees base or absolute)."
+> "Which documentation profile should this project use — `lite` (PRD only), `standard` (PRD + SDD; the default), or `full` (adds TSD + a project BRD)? See the taxonomy in `shared/documentation-taxonomy.md`."
+> "What is your docs root (default `docs/`), and where do specs live (PRD directory, `.feature` globs, issue references) for `testing-spec`?"
 
-Generate:
+Generate (the profile, docs root, and spec sources are `###` subsections — do **not** add a new `##` heading):
 ```
 ## Design Documentation
 
 | Document | Path |
 |----------|------|
 {rows from user input}
+
+### Documentation Profile
+
+`{lite | standard | full}` — default `standard`. Sets which documents this project maintains (see `shared/documentation-taxonomy.md`).
+
+### Docs Root
+
+`{docs_root, default docs/}`
+
+### Spec Sources
+
+{PRD directory, `.feature` globs, and/or issue references used by `testing-spec` — or "not configured"}
 ```
 
 **Git Tags** — Ask:
@@ -498,12 +498,13 @@ Ask the user (use `AskUserQuestion` tool with multi-select):
 > - `issue-creation` — create well-structured issues (uses PROJECT.md only — already done)
 > - `code-review` — automated code review (needs REVIEW-CRITERIA.md)
 > - `testing-static` — integration testing with static test matrix (needs TEST-MATRIX.md)
-> - `testing-prd` — integration testing driven by your PRDs (needs TEST-MATRIX.md + PRD-MANIFEST.md)
+> - `testing-spec` — integration testing from specs: PRDs, issues, `.feature` files (needs TEST-MATRIX.md + SPEC-MANIFEST.md)
+> - `testing-prd` — integration testing driven by your PRDs (needs TEST-MATRIX.md + PRD-MANIFEST.md; superseded by `testing-spec`)
 
 **For `code-review`:** Generate `.claude/project-config/REVIEW-CRITERIA.md` with the following structure. For the per-repo sections, generate one `## {repo_name}` section for each repository collected in Step 4 — do not write a for-loop literally; expand it into actual sections.
 
 ```
-<!-- pw-version: 1.0.1 -->
+<!-- pw-version: 1.3.0 -->
 # Review Criteria
 
 Per-repo review criteria. Read the relevant section when reviewing an MR for a given repo. The **Universal** criteria apply to all repos regardless.
@@ -544,9 +545,9 @@ Then ask: "Would you like to fill in repo-specific review criteria for any of yo
 
 If they provide criteria, update the relevant `## {repo_name}` sections with populated rows.
 
-**For `testing-static` or `testing-prd`:** Generate `.claude/project-config/TEST-MATRIX.md`:
+**For `testing-static`, `testing-spec`, or `testing-prd`:** Generate `.claude/project-config/TEST-MATRIX.md`:
 
-Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.0.1 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
+Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.3.0 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
 
 - **Docker Compose Startup Sequence:** Replace `<WORKTREES_BASE>` with the actual worktrees base from Step 5. Replace `<DEPLOY_REPO>` with the deploy repo from Step 5. Fill in the migration command (Step 4) and seed command (Step 5) if provided; otherwise leave the `<!-- REPLACE THIS -->` markers.
 - **All `<!-- REPLACE THIS: ... -->` comment blocks:** Keep them in place so the user knows what to fill in. Do NOT remove these markers — they are review prompts for the user.
@@ -563,11 +564,13 @@ Ask:
 > - Test method (curl HTTP calls, Playwright, etc.)
 > - Priority: Must Have / Should Have / Nice to Have"
 
-Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.0.1 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
+Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.3.0 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
+
+**For `testing-spec`:** Generate `.claude/project-config/SPEC-MANIFEST.md` from `skills/init/templates/SPEC-MANIFEST.md`. Keep the `<!-- pw-version: 1.3.0 -->` first line, fill the **Spec Sources** table from the docs root and spec sources captured in the Design Documentation step (PRD directory, `.feature` globs, issue references), and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` from the user's answers. Retain the `PRD-MANIFEST.md` template this release — `testing-spec` reads `SPEC-MANIFEST.md` and falls back to a legacy `PRD-MANIFEST.md`.
 
 **For any skill NOT selected:** Still create the config file (so it exists and is discoverable) but with a clear header:
 ```
-<!-- pw-version: 1.0.1 -->
+<!-- pw-version: 1.3.0 -->
 <!-- pw-status: not-configured -->
 > **Note:** This file has not been configured yet. Run `/project-workflows:init` and select the relevant skill to set it up interactively.
 ```
@@ -608,13 +611,11 @@ Check if `CLAUDE.md` exists in the project root.
 - If it does **not** exist: create it as an empty file, then append the section below.
 - If it **already exists**: check whether `## Project Workflows Configuration` heading is present. If it is, skip and tell the user. If not, append the section.
 
-**Gitignore update:** Check for a `.gitignore` file in the project root. If it exists, check whether `.state-tracking/` is already present. If not, append the following line to `.gitignore`:
-```
-.state-tracking/
-```
-If `.gitignore` does not exist, create it with this single line. This ensures runtime state files are never accidentally committed. Do NOT remove or modify any other pre-existing lines in `.gitignore`.
+**Gitignore update:** Apply the **Gitignore Rule** (see File Generation Rules) to ensure `.gitignore` contains `.state-tracking/`.
 
 **State directory:** Run `mkdir -p <PRIMARY_REPO_LOCAL_PATH>/.state-tracking/` to create the directory up-front so it exists before any skill writes state.
+
+**Docs tree:** Scaffold the documentation subtree under the docs root captured in the Design Documentation step (default `docs/`). Create the spec/PRD subdirectory (e.g. `docs/prd/`) and, if the profile is `standard` or `full`, a design subdirectory (e.g. `docs/design/`) with `mkdir -p`. **Never clobber existing `docs/` content** — any current `docs/contributing`, `docs/troubleshooting`, or other files must be left untouched; only add missing directories. Do not create documents here — the `documentation` skill authors those on demand.
 
 Append verbatim:
 
@@ -627,8 +628,9 @@ Config directory: `.claude/project-config/`
 
 - **PROJECT.md** — Central project reference: architecture, repos, tech stacks, source control settings, and worktree conventions. Fill this in first — all other files and skills reference it.
 - **REVIEW-CRITERIA.md** — Per-repo and universal code review criteria used by the `code-review` skill.
-- **TEST-MATRIX.md** — Integration test matrix: startup sequence, infrastructure checks, service health checks, and browser tests used by the `testing-static` and `testing-prd` skills.
-- **PRD-MANIFEST.md** — PRD discovery rules, test ID prefixes, and feature priorities used by the `testing-prd` skill.
+- **TEST-MATRIX.md** — Integration test matrix: startup sequence, infrastructure checks, service health checks, and browser tests used by the `testing-static`, `testing-spec`, and `testing-prd` skills.
+- **SPEC-MANIFEST.md** — Spec discovery and extraction rules (PRDs, issues, Gherkin `.feature` files), test ID prefixes, and feature priorities used by the `testing-spec` skill.
+- **PRD-MANIFEST.md** — Legacy PRD discovery rules, test ID prefixes, and feature priorities used by the `testing-prd` skill (superseded by SPEC-MANIFEST.md).
 - **.env.example** — Template for environment variables. Copy to `.env` and fill in values before using operational skills.
 
 ### Available Skills
@@ -640,6 +642,7 @@ Config directory: `.claude/project-config/`
 | Development | `project-workflows:development` |
 | Issue Creation | `project-workflows:issue-creation` |
 | Static Testing | `project-workflows:testing-static` |
+| Spec-driven Testing | `project-workflows:testing-spec` |
 | PRD-driven Testing | `project-workflows:testing-prd` |
 | GitHub API reference | `project-workflows:github-api` |
 | GitLab API reference | `project-workflows:gitlab-api` |
@@ -702,9 +705,9 @@ Example output format:
 
 | File | Version | Status | Notes |
 |------|---------|--------|-------|
-| PROJECT.md | 1.0.1 | 10/14 sections configured | Unconfigured: API Endpoints, DB Schema, Cross-Cutting, Git Tags |
-| REVIEW-CRITERIA.md | 1.0.1 | Scaffolded | Per-repo criteria not yet filled in |
-| TEST-MATRIX.md | 1.0.1 | Partial | 3 REPLACE THIS markers remain |
+| PROJECT.md | 1.3.0 | 10/14 sections configured | Unconfigured: API Endpoints, DB Schema, Cross-Cutting, Git Tags |
+| REVIEW-CRITERIA.md | 1.3.0 | Scaffolded | Per-repo criteria not yet filled in |
+| TEST-MATRIX.md | 1.3.0 | Partial | 3 REPLACE THIS markers remain |
 | PRD-MANIFEST.md | — | Not created | |
 | .env | — | Present | API_TOKEN_ENV_VAR set |
 ```
@@ -718,7 +721,7 @@ Ask the user what they want to do (use `AskUserQuestion`):
 > Options:
 > - **Add a new repository** — add a repo to PROJECT.md and all secondary config files
 > - **Fill in a PROJECT.md section** — re-interview a specific section
-> - **Configure a skill** — generate or reconfigure REVIEW-CRITERIA.md, TEST-MATRIX.md, or PRD-MANIFEST.md
+> - **Configure a skill** — generate or reconfigure REVIEW-CRITERIA.md, TEST-MATRIX.md, SPEC-MANIFEST.md, or PRD-MANIFEST.md
 > - **Update repository details** — edit an existing repo's tech stack, commands, or paths
 > - **Refresh all** — re-interview everything (existing answers are shown as defaults)
 > - **Something else** — describe what you want to change
@@ -740,7 +743,7 @@ Handle each option:
 - Use `Edit` tool to replace the `<!-- not-configured -->` stub with populated content.
 
 **Configure a skill:**
-- Ask which skill (code-review / testing-static / testing-prd).
+- Ask which skill (code-review / testing-static / testing-spec / testing-prd).
 - Run the relevant interview sub-flow from Step 7.
 - If the config file already exists with `<!-- pw-status: not-configured -->`, overwrite it entirely with the newly generated content (do not attempt to merge with the stub).
 - If the config file already exists with populated content, use `Edit` tool to surgically update sections.
@@ -757,17 +760,25 @@ Handle each option:
 **Something else:**
 - Ask the user to describe the change. Make the edit directly.
 
-**Gitignore check (always run in update mode):** After completing any update action, check for a `.gitignore` file in the project root. If it exists and does not already contain `.state-tracking/`, append the line. If `.gitignore` does not exist, create it with this single line. Do NOT remove or modify any other pre-existing lines in `.gitignore`. This is idempotent and safe to run on every update-mode invocation.
+**Gitignore check (always run in update mode):** After completing any update action, apply the **Gitignore Rule** (see File Generation Rules).
 
 ### U3: Version Mismatch
 
-If any file's `<!-- pw-version:` stamp reads `1.0.0` (the previous release):
+> **`pw-version` is the config-structure version, not the plugin release version.** They are deliberately decoupled: `pw-version` changes only when the config-file structure changes, whereas the plugin's release version (`plugin.json`) advances on every release. Never reconcile one to the other.
 
-> "Some config files were generated with an older version of the plugin (1.0.0). I can migrate them to the current structure (1.0.1) while preserving your existing content. The main changes are: section cross-references were corrected (`§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md; `testing-2.md` → `testing-prd` in PRD-MANIFEST.md). Would you like to migrate now?"
+The current config-structure version is `1.3.0`. If any file's `<!-- pw-version:` stamp reads `1.0.0`, `1.0.1`, or `1.2.0`, offer to migrate it (match version strings explicitly — e.g. `reads 1.2.0` — rather than by numeric comparison, to avoid ambiguity with strings like `1.10.0`):
 
-If yes: read the existing content, extract user-populated values by section, regenerate the file with the current structure, and update the version stamp to `1.0.1`.
+> "Some config files use an older structure (`{stamp}`). I can migrate them to the current structure (`1.3.0`) while preserving your content. Changes up to 1.3.0: `§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md and `testing-2.md` → `testing-prd` in PRD-MANIFEST.md (from 1.0.0); and, for 1.3.0, `PROJECT.md § Design Documentation` gains `### Documentation Profile`, `### Docs Root`, and `### Spec Sources` subsections, plus a new `SPEC-MANIFEST.md` for `testing-spec`. Would you like to migrate now?"
 
-> **Maintenance note:** When the plugin version is bumped in future, update this section to list the new version number, the previous version(s) that require migration, and the specific structural changes between them. Use explicit version string matching (e.g., `reads 1.0.0` or `reads 1.0.1`) rather than numeric comparison to avoid ambiguity with semver strings like `1.9.0` vs `1.10.0`.
+If yes: read the existing content, extract user-populated values by section, regenerate each file with the current structure, and update the version stamp to `1.3.0`. Adding the Design Documentation subsections does **not** add any `##` heading, so the required-headings list is unchanged.
+
+**Legacy `PRD-MANIFEST.md` → `SPEC-MANIFEST.md` (user-confirmed, never automatic):** if a `PRD-MANIFEST.md` is present and no `SPEC-MANIFEST.md` exists, prompt:
+
+> "You have a legacy `PRD-MANIFEST.md`. `testing-spec` reads the more general `SPEC-MANIFEST.md` (spec sources include `.feature` files and issues) and falls back to `PRD-MANIFEST.md` when it is absent — so no action is required. Would you like me to generate a `SPEC-MANIFEST.md` from your `PRD-MANIFEST.md` now? I will keep `PRD-MANIFEST.md` in place."
+
+Only migrate on explicit confirmation. Generate `SPEC-MANIFEST.md` from `skills/init/templates/SPEC-MANIFEST.md`, carrying over the PRD directory (as a Spec Source), Test ID Prefixes, Feature Priorities, and Deduplication Rules. Never delete or mutate `PRD-MANIFEST.md`.
+
+> **Maintenance note:** When the config structure changes in future, update this section with the new version, the previous versions that require migration, and the structural delta. Use explicit version string matching.
 
 ---
 
@@ -798,16 +809,24 @@ The following headings in `PROJECT.md` are read by other skills and **must appea
 
 `PRD-MANIFEST.md` must have `## PRD Directory`, `## Extraction Rules`, `## Test ID Prefixes`, `## Feature Priorities`, `## Deduplication Rules`.
 
+`SPEC-MANIFEST.md` must have `## Spec Sources`, `## Extraction Rules`, `## Test ID Prefixes`, `## Feature Priorities`, `## Deduplication Rules`.
+
+> The documentation profile, docs root, and spec sources are `###` **subsections** under the existing `## Design Documentation` heading — they add no new `##` heading, so the required-headings list above is unchanged.
+
 ### Version Stamp Format
 
-Always place `<!-- pw-version: 1.0.1 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
+Always place `<!-- pw-version: 1.3.0 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
 
 ### Not-Configured Marker
 
-For skipped sections, use exactly:
+For skipped sections — and wherever the skeletons above write `{not-configured stanza}` — use exactly these two lines:
 ```
 <!-- not-configured -->
 > This section has not been configured yet. Run `/project-workflows:init` to set it up.
 ```
 
 This marker is detected by Update Mode to identify unconfigured sections.
+
+### Gitignore Rule
+
+Ensure the project-root `.gitignore` contains `.state-tracking/` so runtime state files are never accidentally committed: if `.gitignore` exists but lacks the line, append it; if it does not exist, create it with this single line. Do NOT remove or modify any other pre-existing lines. This is idempotent and safe to run repeatedly.

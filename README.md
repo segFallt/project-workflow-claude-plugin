@@ -4,7 +4,7 @@ Reusable workflow skills for code review, development, testing, and issue manage
 
 ## Overview
 
-`project-workflows` is a Claude Code plugin that provides 9 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
+`project-workflows` is a Claude Code plugin that provides 12 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
 
 The plugin is project-agnostic — it reads project-specific configuration from files in `.claude/project-config/` (scaffolded by the `init` skill) rather than hard-coding any project details.
 
@@ -16,7 +16,10 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 | `code-review` | Review all open change requests across configured repositories |
 | `development` | Implement a feature, bug fix, or task from an issue |
 | `issue-creation` | Create a well-structured issue from a problem description or feature request |
-| `testing-prd` | Run integration tests generated dynamically from PRDs |
+| `plain-language` | Guidance to keep generated prose from reading as LLM-written (user-invoked) |
+| `documentation` | Author and update right-sized project docs (BRD/PRD/SDD/TSD) from templates |
+| `testing-spec` | Run integration tests generated from specs — PRDs, issues, and Gherkin `.feature` criteria |
+| `testing-prd` | **Deprecated** (removed next major) — superseded by `testing-spec`. Runs integration tests generated dynamically from PRDs |
 | `testing-static` | Run integration tests using a static test matrix |
 | `gitlab-api` | Reference skill for GitLab REST API operations (MRs, issues, notes, branches) |
 | `github-api` | Reference skill for GitHub REST API operations (PRs, issues, reviews, branches) |
@@ -58,7 +61,8 @@ This creates the following files in `.claude/project-config/`:
 | `PROJECT.md` | Project overview, repositories, API credentials, team context |
 | `REVIEW-CRITERIA.md` | Code review standards and acceptance criteria |
 | `TEST-MATRIX.md` | Static test matrix for the `testing-static` skill |
-| `PRD-MANIFEST.md` | Product requirements for the `testing-prd` skill |
+| `SPEC-MANIFEST.md` | Spec discovery rules (PRDs, issues, `.feature` files) for the `testing-spec` skill |
+| `PRD-MANIFEST.md` | Product requirements for the legacy `testing-prd` skill |
 | `.env.example` | Environment variable template for API tokens |
 
 Populate these files with your project's details. All other skills read from them at runtime — no further configuration required.
