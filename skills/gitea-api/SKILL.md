@@ -200,25 +200,22 @@ curl -s -X POST \
 
 ### 6. UNAPPROVE_CR
 
-> **Limitation:** Gitea does not have a dedicated "unapprove" or "dismiss review" endpoint in the REST API. To effectively override a previous approval, submit a new review with a different event.
-
-**Workaround — submit a new review with `REQUEST_CHANGES`:**
+Dismiss a prior approval review directly (**Gitea 1.24+**).
 
 ```bash
 curl -s -X POST \
   -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{
-    "event": "REQUEST_CHANGES",
-    "body": "Withdrawing previous approval — changes needed."
-  }' \
-  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews"
+  -d '{"message": "Withdrawing previous approval — changes needed.", "priors": false}' \
+  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews/{review_id}/dismissals"
 ```
 
-> **Note:** This does not remove the original approval review — it adds a new review that supersedes it. Gitea considers the latest review from each user as the effective review state. Alternatively, you can delete a specific review if you have admin permissions: `DELETE /api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews/{review_id}`.
+Undismiss with the same path ending in `/undismissals` (no body). Body struct: `DismissPullReviewOptions` (`message`, `priors`).
 
-**Key response fields:** `id`, `state` (`REQUEST_CHANGES`), `user`.
+> **Version guard:** `dismissals`/`undismissals` are available on all supported servers (**1.24+**). If a server predates it (404), fall back to submitting a superseding `REQUEST_CHANGES` review on `.../pulls/{index}/reviews` — the latest review per user is the effective state.
+
+**Key response fields:** `id`, `state`, `dismissed`, `user`.
 
 ---
 
@@ -293,9 +290,18 @@ See the **Inline Comment Position Object** section below for full details on pos
 
 ### 10. RESOLVE_CR_THREAD
 
-> **Limitation:** Gitea does not support marking review comment threads as resolved via the REST API. There is no equivalent endpoint or GraphQL workaround.
+Mark a review comment thread resolved (**Gitea 1.26+**). `{id}` is the review comment id; note there is no `{index}` in the path.
 
-**Workaround:** Post a reply acknowledging the thread is addressed (via `POST_CR_COMMENT` or by adding a comment to the review). The thread will not be visually marked as "resolved" in the Gitea UI, but the reply serves as an acknowledgment.
+```bash
+curl -s -X POST \
+  -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/json" \
+  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/comments/{id}/resolve"
+```
+
+Unresolve with the same path ending in `/unresolve`.
+
+> **Version guard:** `resolve`/`unresolve` were added in **Gitea 1.26** and return **404** on older servers. When resolve 404s, skip resolution and instead post a reply acknowledging the thread is addressed (via `REPLY_TO_CR_THREAD`, or `POST_CR_COMMENT` if replies are also unavailable). A thread is already resolved when its comment's `resolver` field is non-null (see §11/§25).
 
 ---
 
@@ -321,7 +327,7 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 
 **Key response fields (general):** Array of comment objects with `id`, `body`, `user`, `created_at`, `updated_at`, `html_url`.
 
-**Key response fields (review comments):** Array of review comment objects with `id`, `body`, `user`, `path`, `created_at`, `updated_at`.
+**Key response fields (review comments):** Array of review comment objects with `id`, `body`, `user`, `path`, `created_at`, `updated_at`, `pull_request_review_id`, `resolver` (user object; non-null ⇒ thread resolved), `position`/`original_position` (line numbers **on read** — note this differs from the `new_position`/`old_position` used **on create**; see §9), `diff_hunk`, `commit_id`, `original_commit_id`, `html_url`, `pull_request_url`.
 
 > **⚠️ Pagination required:** Both endpoints may return limited results per page. Paginate through all pages (see Pagination section above) to get all comments.
 
@@ -551,41 +557,20 @@ curl -s -X POST \
 
 ### 24. REPLY_TO_CR_THREAD
 
-> **Limitation:** Gitea does not support direct thread replies in the REST API. There is no endpoint to reply to a specific review comment within its thread.
+Post a threaded reply on a specific review comment (**Gitea 1.27+**). `{id}` is the review comment id; body struct `CreatePullReviewCommentReplyOptions`.
 
-**Workaround — add a new review comment or issue comment:**
-
-Option A — Submit a new review with an inline comment on the same file/line:
 ```bash
 curl -s -X POST \
   -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{
-    "body": "",
-    "event": "COMMENT",
-    "comments": [
-      {
-        "path": "{same_file_path}",
-        "new_position": {same_line_number},
-        "body": "{reply text}"
-      }
-    ]
-  }' \
-  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews"
+  -d '{"body": "{reply text}"}' \
+  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/comments/{id}/replies"
 ```
 
-Option B — Post a general PR comment referencing the original comment:
-```bash
-curl -s -X POST \
-  -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{"body": "Re: {file}:{line} — {reply text}"}' \
-  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}/comments"
-```
+**Key response fields:** `id`, `body`, `user`, `pull_request_review_id`, `resolver`, `created_at`.
 
-> **Note:** Neither workaround creates a threaded reply in the Gitea UI. Option A places the comment on the same line (closest to a thread reply). Option B posts a general comment.
+> **Version guard:** the replies endpoint was added in **Gitea 1.27** and returns **404** on older servers. On a 404, fall back to a non-threaded comment: submit a new review with an inline comment on the same file/line (`.../pulls/{index}/reviews` with `event: COMMENT`), or post a general PR comment (`POST_CR_COMMENT`) referencing `{file}:{line}`.
 
 ---
 
@@ -608,9 +593,9 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
   "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/pulls/{index}/reviews/{review_id}/comments"
 ```
 
-**Key response fields (review comments):** Array of comment objects with `id`, `body`, `path`, `user`, `created_at`, `updated_at`.
+**Key response fields (review comments):** Array of comment objects with `id`, `body`, `path`, `user`, `created_at`, `updated_at`, `pull_request_review_id`, `resolver` (non-null ⇒ resolved), `position`/`original_position` (line numbers on read — see §9/§11).
 
-> **Threading model:** Gitea reviews are the primary grouping mechanism. Each review contains zero or more inline comments. To reconstruct discussions, iterate through all reviews and their comments. Unlike GitHub, there is no `in_reply_to_id` threading within review comments.
+> **Threading model:** Gitea reviews are the primary grouping mechanism — each review contains zero or more inline comments, reconstructed by iterating reviews and their comments. Threaded replies **are** supported via the review-comment `/replies` endpoint (§24, Gitea 1.27+), and resolution state **is** tracked via each comment's `resolver` field (§11) with `/resolve` and `/unresolve` (§10, Gitea 1.26+). On servers predating those versions, use the documented per-operation fallbacks.
 
 > **⚠️ Pagination required:** This endpoint may return limited results per page. You MUST paginate through all pages (see Pagination section above) to ensure no reviews are missed.
 

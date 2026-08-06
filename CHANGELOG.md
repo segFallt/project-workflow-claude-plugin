@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `development` skill no longer sets upstream tracking on the first push. `shared/worktree-setup.md` and `skills/development/SKILL.md` Phase 4 now push with `git push "$PUSH_URL" {branch_name}` (no `-u`); passing the token-bearing push URL to `--set-upstream` persisted the PAT in plaintext in `.git/config` (`branch.<name>.remote`), contradicting the directive's own no-credential-persistence contract (#23). The safe named-remote example in `skills/init/templates/PROJECT.md` is unaffected.
+- `gitea-api` skill now documents the real PR-review-comment endpoints instead of declaring them unsupported: §24 `REPLY_TO_CR_THREAD` uses `/pulls/{index}/comments/{id}/replies` (Gitea 1.27+), §10 `RESOLVE_CR_THREAD` uses `/pulls/comments/{id}/resolve` + `/unresolve` (1.26+), and §6 `UNAPPROVE_CR` uses `/reviews/{id}/dismissals` (1.24+) as the primary path. Each carries a minimum-version guard with a 404 fallback. §11/§25 field lists add `resolver`, `pull_request_review_id`, and the read-side `position`/`original_position` (vs create-side `new_position`/`old_position`); the §25 threading note is corrected to state replies and resolution are supported. Unblocks threaded review replies for `development` and `code-review` on Gitea (#25).
 
 ## [1.4.2] - 2026-04-21
 
