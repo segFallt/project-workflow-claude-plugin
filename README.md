@@ -17,6 +17,7 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 | `development` | Implement a feature, bug fix, or task from an issue |
 | `issue-creation` | Create a well-structured issue from a problem description or feature request |
 | `plain-language` | Guidance to keep generated prose from reading as LLM-written (user-invoked) |
+| `documentation` | Author and update right-sized project docs (BRD/PRD/SDD/TSD) from templates |
 | `testing-prd` | Run integration tests generated dynamically from PRDs |
 | `testing-static` | Run integration tests using a static test matrix |
 | `gitlab-api` | Reference skill for GitLab REST API operations (MRs, issues, notes, branches) |
