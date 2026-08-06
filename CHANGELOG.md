@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `plain-language` guidance skill (`/project-workflows:plain-language`). A user-invoked passive reference (`disable-model-invocation: true`) that steers generated prose and formatting away from patterns commonly read as LLM-written — filler vocabulary, negative parallelism, rule-of-three, over-bolding, em-dash and Title Case overuse. Documented in the README skills table (#27). The skills-count line and any `plugin.json` bump are reconciled once at release (see #37).
+
 ### Fixed
 
 - `development` skill no longer sets upstream tracking on the first push. `shared/worktree-setup.md` and `skills/development/SKILL.md` Phase 4 now push with `git push "$PUSH_URL" {branch_name}` (no `-u`); passing the token-bearing push URL to `--set-upstream` persisted the PAT in plaintext in `.git/config` (`branch.<name>.remote`), contradicting the directive's own no-credential-persistence contract (#23). The safe named-remote example in `skills/init/templates/PROJECT.md` is unaffected.
