@@ -64,7 +64,7 @@ From the answers, **derive automatically** (do not ask):
 - `GROUP_DASHBOARD`: `<instance>/groups/<group>` (GitLab) or `<instance>/orgs/<org>` (GitHub/Gitea)
 - Which API reference skill to mention: `project-workflows:gitlab-api` / `project-workflows:github-api` / `project-workflows:gitea-api`
 
-**Generate immediately:** Write `.claude/project-config/PROJECT.md` with the following content populated from the answers. Use `<!-- not-configured -->` as a single-line placeholder for sections not yet collected. The first line of the file **must** be the version stamp.
+**Generate immediately:** Write `.claude/project-config/PROJECT.md` with the following content populated from the answers. In the skeleton below, `{not-configured stanza}` marks a section not yet collected — when writing the file, expand each `{not-configured stanza}` to the exact two-line marker defined in the **Not-Configured Marker** reference section near the end of this skill. The skeleton's 14 `##` headings are exactly the canonical **Required Section Headings** (listed near the end) — keep every heading exactly as written, in order. The first line of the file **must** be the version stamp.
 
 ```
 <!-- pw-version: 1.3.0 -->
@@ -110,85 +110,73 @@ Once configured, see `project-workflows:{host}-api` skill for all API interactio
 
 ## Repository Locations
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Repository Dependency Order
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Container Registry
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Tech Stacks Per Repo
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Cross-Cutting Concerns
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Domain Concepts
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## API Endpoints
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Database Schema
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Concurrent Session Isolation
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Local Development
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Design Documentation
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 
 ---
 
 ## Git Tags
 
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
+{not-configured stanza}
 ```
 
 Confirm to the user: "PROJECT.md created with your project identity and source control settings."
@@ -400,10 +388,7 @@ Root: `{prd_directory}`
 
 Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` (or the more general `SPEC-MANIFEST.md`) for extraction rules, test ID prefixes, and feature priorities. The `testing-spec` skill (or the legacy `testing-prd`) uses these to generate integration tests from your specs.
 }
-{if prd_directory was 'none' or skipped:
-<!-- not-configured -->
-> This section has not been configured yet. Run `/project-workflows:init` to set it up.
-}
+{if prd_directory was 'none' or skipped: {not-configured stanza} }
 ```
 
 **API Endpoints** — Ask:
@@ -626,11 +611,7 @@ Check if `CLAUDE.md` exists in the project root.
 - If it does **not** exist: create it as an empty file, then append the section below.
 - If it **already exists**: check whether `## Project Workflows Configuration` heading is present. If it is, skip and tell the user. If not, append the section.
 
-**Gitignore update:** Check for a `.gitignore` file in the project root. If it exists, check whether `.state-tracking/` is already present. If not, append the following line to `.gitignore`:
-```
-.state-tracking/
-```
-If `.gitignore` does not exist, create it with this single line. This ensures runtime state files are never accidentally committed. Do NOT remove or modify any other pre-existing lines in `.gitignore`.
+**Gitignore update:** Apply the **Gitignore Rule** (see File Generation Rules) to ensure `.gitignore` contains `.state-tracking/`.
 
 **State directory:** Run `mkdir -p <PRIMARY_REPO_LOCAL_PATH>/.state-tracking/` to create the directory up-front so it exists before any skill writes state.
 
@@ -779,7 +760,7 @@ Handle each option:
 **Something else:**
 - Ask the user to describe the change. Make the edit directly.
 
-**Gitignore check (always run in update mode):** After completing any update action, check for a `.gitignore` file in the project root. If it exists and does not already contain `.state-tracking/`, append the line. If `.gitignore` does not exist, create it with this single line. Do NOT remove or modify any other pre-existing lines in `.gitignore`. This is idempotent and safe to run on every update-mode invocation.
+**Gitignore check (always run in update mode):** After completing any update action, apply the **Gitignore Rule** (see File Generation Rules).
 
 ### U3: Version Mismatch
 
@@ -838,10 +819,14 @@ Always place `<!-- pw-version: 1.3.0 -->` as the **first line** of every generat
 
 ### Not-Configured Marker
 
-For skipped sections, use exactly:
+For skipped sections — and wherever the skeletons above write `{not-configured stanza}` — use exactly these two lines:
 ```
 <!-- not-configured -->
 > This section has not been configured yet. Run `/project-workflows:init` to set it up.
 ```
 
 This marker is detected by Update Mode to identify unconfigured sections.
+
+### Gitignore Rule
+
+Ensure the project-root `.gitignore` contains `.state-tracking/` so runtime state files are never accidentally committed: if `.gitignore` exists but lacks the line, append it; if it does not exist, create it with this single line. Do NOT remove or modify any other pre-existing lines. This is idempotent and safe to run repeatedly.
