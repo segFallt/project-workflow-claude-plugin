@@ -128,7 +128,6 @@ This skill operates in two phases:
 > This is a long-running polling loop. You MUST keep polling until the tracking list is empty.
 > The ONLY permitted exit conditions are:
 > 1. The tracking list is empty (all monitored CRs are approved, merged, or closed)
-> 2. `review_round` > 5 for a specific CR → remove that CR from the list and continue the loop for remaining CRs
 >
 > "No new activity on any CR" is NOT an exit condition — it means authors haven't responded yet. Continue polling.
 > "One poll cycle completed" is NOT an exit condition. Keep polling.
@@ -228,8 +227,7 @@ The **Universal** section applies to all repos. When dispatching sub-agents, rea
 Use this template for the summary comment on every reviewed CR. For Phase 1 (initial review), omit the round number. For Phase 2 re-reviews, include the round.
 
 ```markdown
-<!-- claude-review -->
-## 🤖 Automated Code Review{If review_round > 1: " (Round {review_round})"}
+## Code Review{If review_round > 1: " (Round {review_round})"}
 
 **Verdict:** ✅ Approved / ❌ Changes Requested
 
@@ -258,8 +256,6 @@ Use this template for the summary comment on every reviewed CR. For Phase 1 (ini
 - [{x or space}] Naming conventions followed
 - [{x or space}] Linked issue addressed (if applicable)
 
----
-*Automated review by Claude Code — [view CR]({web_url})*
 ```
 
 > The `<!-- claude-review -->` marker on the first line is **required** — it's used for deduplication.
