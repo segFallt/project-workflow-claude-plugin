@@ -56,6 +56,12 @@ Review every changed file against the criteria, taking into account the prior re
   "threads_to_resolve": [
     "<discussion_id of a prior inline thread whose issue has been fixed by the author>"
   ],
+  "threads_to_reply": [
+    {
+      "discussion_id": "<id of the prior inline thread this persisting finding maps to>",
+      "reply_text": "<short reply noting the issue still stands and what remains to change>"
+    }
+  ],
   "checklist": {
     "no_secrets": true | false,
     "no_generated_file_edits": true | false,
@@ -76,6 +82,7 @@ Rules:
 - Do NOT re-flag issues that have been resolved
 - If a linked issue is provided, verify the diff addresses its requirements
 - For `threads_to_resolve`: examine the discussion threads provided. For each inline thread from a prior review round where the issue has been fixed by the author, include that thread's `discussion_id` (from the discussion object's `id` field) in the `threads_to_resolve` array. Only include threads that are genuinely resolved — do not include threads where the issue persists
+- For `threads_to_reply`: for each finding that **persists** from a prior round and still maps to an existing inline thread, add `{discussion_id, reply_text}` so the orchestrator replies to that thread instead of opening a duplicate. Use the thread's `id` field. Omit a finding here if it maps to no prior thread (e.g. the line moved) — the orchestrator posts a new inline comment for those. A given thread appears in `threads_to_resolve` or `threads_to_reply`, never both.
 ```
 
 ---

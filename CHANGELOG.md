@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `plain-language` guidance skill (`/project-workflows:plain-language`). A user-invoked passive reference (`disable-model-invocation: true`) that steers generated prose and formatting away from patterns commonly read as LLM-written — filler vocabulary, negative parallelism, rule-of-three, over-bolding, em-dash and Title Case overuse. Documented in the README skills table (#27). The skills-count line and any `plugin.json` bump are reconciled once at release (see #37).
 - `shared/documentation-taxonomy.md` — canonical, project-agnostic reference for the documentation framework (epic #28): the BRD/PRD/SDD/TSD taxonomy, the `lite`/`standard`/`full` profiles (default `standard`), and the per-change escalation matrix, each defined once as the single source of truth read by the doc-authoring sub-agent (R2), `init` profile storage (R6), and the author decision guide (R8). Foundation only — no logic (#29).
 
+### Changed
+
+- `code-review` skill now replies to the existing review thread for a **persisting** finding on re-review (via `REPLY_TO_CR_THREAD`) instead of opening a duplicate inline comment each round — completing the reply half of #18. Documented fallbacks (never error): a new inline comment when the line has moved and the finding no longer maps to a prior thread, or when the host lacks a threaded-reply endpoint (Gitea below 1.27). Reply/resolve are gated on host **and** Gitea version (reply ≥ 1.27, resolve ≥ 1.26); the existing resolve-on-fix behaviour is unchanged. The re-review sub-agent now emits a `threads_to_reply` mapping (#26).
+
 ### Fixed
 
 - `development` skill no longer sets upstream tracking on the first push. `shared/worktree-setup.md` and `skills/development/SKILL.md` Phase 4 now push with `git push "$PUSH_URL" {branch_name}` (no `-u`); passing the token-bearing push URL to `--set-upstream` persisted the PAT in plaintext in `.git/config` (`branch.<name>.remote`), contradicting the directive's own no-credential-persistence contract (#23). The safe named-remote example in `skills/init/templates/PROJECT.md` is unaffected.
