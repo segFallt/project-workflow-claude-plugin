@@ -75,6 +75,7 @@ All API calls in this skill use the following **standardized operation names**. 
 - `APPROVE_CR` — approve a CR
 - `UNAPPROVE_CR` — remove approval from a CR
 - `RESOLVE_CR_THREAD` — resolve/unresolve a discussion thread
+- `REPLY_TO_CR_THREAD` — reply to an existing discussion thread
 - `GET_CR_LINKED_ISSUES` — get issues linked to/closed by a CR
 
 ---
@@ -169,8 +170,8 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
    g. **Post updated findings and manage inline threads:**
       - Post the summary comment via `POST_CR_COMMENT` (include round number, see Comment Formatting)
       - For each `critical`, `warning`, or `suggestion` finding with non-null `file` and `line`, post an inline comment via `POST_CR_INLINE_COMMENT`
-      - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author)
-      - For issues that persist from the previous round, post a new inline comment rather than replying to the old thread (new code positions may have shifted)
+      - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author). Skip the resolve where the host lacks the endpoint (Gitea below 1.26 — see the capability-gating note below); never error
+      - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api skill), post a new inline comment instead
    h. **Approve or revoke** based on new verdict:
       - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list. Write the updated tracking list to the state file. If `tracked_crs` is now empty, delete the state file.
       - If verdict is `request_changes` → call `UNAPPROVE_CR`; update `last_review_at` = now; continue tracking
@@ -282,8 +283,10 @@ Severity emojis: 🚨 critical, ⚠️ warning, 💡 suggestion
 
 On re-review rounds (Phase 2), manage prior inline threads:
 - **Resolved issues:** If a prior `critical`/`warning`/`suggestion` inline thread is now addressed by the author, resolve the thread via `RESOLVE_CR_THREAD`
-- **Persisting issues:** Post a new inline comment at the current file/line position (do not reply to old threads — line numbers may have shifted)
+- **Persisting issues:** Reply to the mapped prior thread via `REPLY_TO_CR_THREAD` (from the sub-agent's `threads_to_reply`) rather than opening a duplicate thread. Fallback to a new inline comment when the line has moved far enough that the finding no longer maps to a prior thread, or when the host has no threaded-reply endpoint (Gitea below 1.27 — see the gitea-api skill). Never error.
 - **New issues:** Post new inline comments as normal
+
+> **Capability gating:** reply needs GitLab/GitHub or Gitea ≥ 1.27; resolve needs GitLab/GitHub or Gitea ≥ 1.26. Below those versions, fall back (new inline comment / skip resolve) — never error.
 
 ### Tone Guidelines
 
