@@ -95,10 +95,7 @@ git -C <WORKTREE_PATH> \
 git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
 ```
 
-To set upstream tracking on first push:
-```bash
-git -C <WORKTREE_PATH> push -u "$PUSH_URL" {branch_name}
-```
+> Do not add `-u`/`--set-upstream`: with a URL it persists the token-bearing push URL into `.git/config` in plaintext.
 
 > **WARNING: DO NOT modify git config or remote URLs.** Never run `git config user.name`, `git config user.email`, or `git remote set-url` in any scope (global, local, or worktree). These commands persist changes that pollute the project owner's environment. Always use `-c` flags for identity and `$PUSH_URL` for authentication.
 
