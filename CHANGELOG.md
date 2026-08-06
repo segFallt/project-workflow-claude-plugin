@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `development` skill no longer sets upstream tracking on the first push. `shared/worktree-setup.md` and `skills/development/SKILL.md` Phase 4 now push with `git push "$PUSH_URL" {branch_name}` (no `-u`); passing the token-bearing push URL to `--set-upstream` persisted the PAT in plaintext in `.git/config` (`branch.<name>.remote`), contradicting the directive's own no-credential-persistence contract (#23). The safe named-remote example in `skills/init/templates/PROJECT.md` is unaffected.
+
 ## [1.4.2] - 2026-04-21
 
 ### Changed
