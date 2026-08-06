@@ -227,6 +227,7 @@ The **Universal** section applies to all repos. When dispatching sub-agents, rea
 Use this template for the summary comment on every reviewed CR. For Phase 1 (initial review), omit the round number. For Phase 2 re-reviews, include the round.
 
 ```markdown
+<!-- claude-review -->
 ## Code Review{If review_round > 1: " (Round {review_round})"}
 
 **Verdict:** ✅ Approved / ❌ Changes Requested
