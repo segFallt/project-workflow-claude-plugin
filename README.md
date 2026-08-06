@@ -4,7 +4,7 @@ Reusable workflow skills for code review, development, testing, and issue manage
 
 ## Overview
 
-`project-workflows` is a Claude Code plugin that provides 9 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
+`project-workflows` is a Claude Code plugin that provides 12 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
 
 The plugin is project-agnostic — it reads project-specific configuration from files in `.claude/project-config/` (scaffolded by the `init` skill) rather than hard-coding any project details.
 
@@ -61,7 +61,8 @@ This creates the following files in `.claude/project-config/`:
 | `PROJECT.md` | Project overview, repositories, API credentials, team context |
 | `REVIEW-CRITERIA.md` | Code review standards and acceptance criteria |
 | `TEST-MATRIX.md` | Static test matrix for the `testing-static` skill |
-| `PRD-MANIFEST.md` | Product requirements for the `testing-prd` skill |
+| `SPEC-MANIFEST.md` | Spec discovery rules (PRDs, issues, `.feature` files) for the `testing-spec` skill |
+| `PRD-MANIFEST.md` | Product requirements for the legacy `testing-prd` skill |
 | `.env.example` | Environment variable template for API tokens |
 
 Populate these files with your project's details. All other skills read from them at runtime — no further configuration required.
