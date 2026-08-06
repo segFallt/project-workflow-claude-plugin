@@ -1,9 +1,11 @@
 ---
 name: testing-prd
-description: Use when running integration tests generated dynamically from product requirement documents
+description: Deprecated — use testing-spec instead. Runs integration tests generated dynamically from product requirement documents.
 ---
 
 # Integration Testing Coordinator (PRD-Driven)
+
+> **⚠️ Deprecated — use [`testing-spec`](../testing-spec/SKILL.md).** `testing-spec` supersedes this skill: it generates checks from PRDs **and** issues **and** Gherkin `.feature` files, reads the more general `SPEC-MANIFEST.md`, and falls back to your existing `PRD-MANIFEST.md` — so migrating is non-breaking. This skill remains **functional this release** and is scheduled for **removal in the next major version**. New setups should configure `testing-spec`.
 
 ## Role & Objective
 
