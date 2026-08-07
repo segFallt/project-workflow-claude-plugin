@@ -7,9 +7,9 @@ description: Use when reviewing open change requests across a project's reposito
 
 ## Role & Objective
 
-You are an **automated code reviewer**. Your job is to monitor open change requests across the configured group/org (see `PROJECT.md § Source Control`), review each one against project-specific criteria, and either **approve** or **leave actionable feedback**.
+You are an **automated code reviewer**. Your job is to monitor open change requests across the configured group/org (see `PROJECT.md § Source Control`), review each one against the project's review standards, and either **approve** or **leave actionable feedback**.
 
-You are a **coordinator**. You do NOT read diffs yourself. For each CR that needs review, you delegate to a sub-agent with the full diff and review criteria, then post the sub-agent's findings.
+You are a **coordinator**. You do NOT read diffs yourself. For each CR that needs review, you delegate to a sub-agent with the full diff and the review standards, then post the sub-agent's findings.
 
 **Success criteria for each cycle:**
 - Every open, non-draft CR in scope has been reviewed or skipped (with reason)
@@ -26,7 +26,7 @@ Before running this skill, ensure the following are in place:
 | Type | Item | Notes |
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Must be populated — this is the source of truth for all repo and host configuration |
-| Config | `.claude/project-config/REVIEW-CRITERIA.md` | Required — contains universal and per-repo review criteria |
+| Config | `.claude/project-config/STANDARDS.md` | Optional — shared, severity-graded standards (Universal Principles + per-repo). When absent, review still runs (no hard-block), using the built-in Severity & Decision Framework |
 | Env var | `REVIEW_TOKEN_ENV_VAR` | Dedicated review bot token — used for all API calls in this skill (falls back to `API_TOKEN_ENV_VAR` if not set) |
 | Env var | `API_TOKEN_ENV_VAR` | Fallback personal access token — used only when `REVIEW_TOKEN_ENV_VAR` is not configured |
 | Tool | `curl` | Required for all API calls |
@@ -113,7 +113,7 @@ rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
 3. **For non-skipped CRs**, check deduplication — apply the **Activity-detection rule** (above) with the Phase 1 baseline (the most recent `<!-- claude-review -->` comment's `created_at`). Re-review if there is new activity; otherwise skip.
 4. **Fetch CR changes** (full diff) via `GET_CR_DIFF` (paginate through all pages) for CRs that need review
 5. **Fetch linked issues** — call `GET_CR_LINKED_ISSUES` for each CR. If any issues are returned, note their title, description, labels, and URL to pass to the sub-agent
-6. **Delegate to the Initial Review Sub-Agent** — read `./sub-agents/initial-review.md` and dispatch via the Agent tool, passing the diff, CR metadata, review criteria, and any linked issue context
+6. **Delegate to the Initial Review Sub-Agent** — read `./sub-agents/initial-review.md` and dispatch via the Agent tool, passing the diff, CR metadata, review standards, and any linked issue context
 7. **Post findings** based on sub-agent output:
    a. Post the summary comment via `POST_CR_COMMENT` using the Summary Comment template
    b. Post inline comments per the **Inline Comments** section below (canonical rule for which findings go inline, praise handling, and post-failure fallback)
@@ -191,11 +191,13 @@ Skip a CR (do not review) if any of the following are true:
 
 ---
 
-## Review Criteria
+## Standards
 
-Read `.claude/project-config/REVIEW-CRITERIA.md` for all review criteria, organized by repo.
+Read `.claude/project-config/STANDARDS.md` for the project's shared standards, organized by repo. **This file is optional** — when it is absent, skip this step and review against the built-in **Severity & Decision Framework** below (no hard-block).
 
-The **Universal** section applies to all repos. When dispatching sub-agents, read the relevant repo's section from `REVIEW-CRITERIA.md` and pass it inline alongside the universal criteria to populate the `{universal criteria + repo-specific criteria}` field in the sub-agent prompt template.
+The **Universal Principles** section applies to all repos. When dispatching sub-agents, read the relevant repo's `## {repo}` section from `STANDARDS.md` and pass it — **including each row's `Severity`** — inline alongside the Universal Principles to populate the `{universal criteria + repo-specific criteria}` field in the sub-agent prompt template. Every row is checked in every review.
+
+**`Severity` as a floor.** For a finding that maps to a `STANDARDS.md` row, the reviewer decides **which** rule is violated (binding), and that row's `Severity` is the finding's **floor**: the reviewer may **escalate** a clearly worse instance to a higher severity but must **never silently downgrade** below the floor. Findings that map to no row use the built-in Severity & Decision Framework below. When `STANDARDS.md` is absent, every finding uses that built-in framework.
 
 ---
 
@@ -209,6 +211,8 @@ The **Universal** section applies to all repos. When dispatching sub-agents, rea
 | **praise** | NO | Something done well — always include at least one per review |
 
 **Decision rule:** If any finding is `critical` or `warning` → `request_changes` (and revoke any existing approval). Otherwise → `approve`.
+
+> **Interaction with `STANDARDS.md` floors:** the severity vocabulary here (`critical`, `warning`, `suggestion`) is identical to the `Severity` column in `STANDARDS.md`. A finding mapped to a standards row takes that row's `Severity` as its **floor** (escalate-only, never silently downgraded — see **Standards** above); findings mapped to no row, and all findings when `STANDARDS.md` is absent, use this framework directly. Either way the decision rule above applies unchanged, since a floor only ever raises a severity.
 
 ---
 

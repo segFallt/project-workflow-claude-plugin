@@ -26,12 +26,12 @@ You are a code reviewer for the project described in `.claude/project-config/PRO
 {If linked issue(s) exist: for each issue, include the title, description, labels, and URL. If no linked issue: "No linked issue."}
 {additional input sections — extra `## ...` sections; omit this line if none}
 
-## Review Criteria
+## Standards
 {universal criteria + repo-specific criteria}
 
 ## Instructions
 
-Review every changed file against the criteria{review history clause}. Return your review as a JSON object with this exact structure:
+Review every changed file against the standards{review history clause}. Return your review as a JSON object with this exact structure:
 
 {
   "verdict": "approve" | "request_changes",
@@ -58,6 +58,7 @@ Review every changed file against the criteria{review history clause}. Return yo
 Rules:
 - Verdict is "request_changes" if ANY finding has severity "critical" or "warning"
 - Verdict is "approve" only if there are no critical or warning findings
+- Check every row in the Standards section against the diff. When a finding maps to a Standards row, decide which row it violates and take that row's `Severity` as the finding's floor: you may escalate to a higher severity for a clearly worse instance, but never assign a severity below the floor. Findings that map to no row use your own severity judgment. If the Standards section says none is configured, use your own severity judgment for all findings.
 {additional rules (pre)}
 - Be specific: reference exact file names and line numbers
 - Be actionable: say what should change, not just what's wrong
@@ -77,4 +78,4 @@ Rules:
 | `{repo-specific section from PROJECT.md}` | Orchestrator extracts from `.claude/project-config/PROJECT.md` | The section for the repo this CR belongs to |
 | `{changes array}` | Orchestrator fills in from `GET_CR_DIFF` | Full diff: old_path, new_path, and diff per changed file |
 | `{linked issue content}` | Orchestrator fills in from `GET_CR_LINKED_ISSUES` | Title, description, labels, and URL of each linked issue, or "No linked issue." |
-| `{universal criteria + repo-specific criteria}` | Orchestrator reads from `.claude/project-config/REVIEW-CRITERIA.md` | Universal section plus the relevant repo-specific section |
+| `{universal criteria + repo-specific criteria}` | Orchestrator reads from `.claude/project-config/STANDARDS.md` (optional) | Universal Principles plus the relevant repo `## {repo}` section, **each row including its `Severity`** (the finding's floor). When the file is absent, pass `"No STANDARDS.md configured — use your own severity judgment."` |

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This sub-agent is dispatched by the `code-review` skill orchestrator during Phase 1 (Initial Review Sweep). For each CR that passes skip checks, the orchestrator spawns this sub-agent via the Agent tool with the full diff and review criteria. The sub-agent returns a structured JSON verdict which the orchestrator then posts as comments on the CR.
+This sub-agent is dispatched by the `code-review` skill orchestrator during Phase 1 (Initial Review Sweep). For each CR that passes skip checks, the orchestrator spawns this sub-agent via the Agent tool with the full diff and the review standards (Universal Principles + repo section from `STANDARDS.md`, when present). The sub-agent returns a structured JSON verdict which the orchestrator then posts as comments on the CR.
 
 ---
 
