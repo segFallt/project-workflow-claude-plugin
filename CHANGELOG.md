@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-08-07
+
+### Added
+
+- Shared, severity-graded engineering standards as a single optional project-config artifact — **`STANDARDS.md`** (supersedes `REVIEW-CRITERIA.md`), consumed as a first-class input by `issue-creation`, `development`, and `code-review` (feature #40). One merged file carries a `## Universal Principles` section plus one `## {repo}` section per repo, all on a normalized `Category | What to check | Severity` schema. The `Severity` column is read **only by `code-review`, as a floor** — a rule-mapped finding takes its row's severity as a floor the reviewer may escalate but never silently downgrade below; `issue-creation` and `development` apply every row and ignore `Severity`. The template is seeded with the 8 Universal rows (each assigned a severity floor), fixes the long-standing `SOLID` "principals" typo, and is the single source `init` reads at generation time. A `.ci/smoke-test.sh` structural check guards the template's required headings/columns, closing the `skills/init/templates/*` CI blind spot (#41).
+
+### Changed
+
+- `code-review` now consumes `STANDARDS.md` as an **optional** input: its rows are first-class checks in every review, each rule-mapped finding taking the row's `Severity` as a floor (escalate-only). The file is no longer required — when absent, review still runs (no hard-block) using the built-in Severity & Decision Framework. The findings/verdict schema and the `critical`/`warning` ⇒ `request_changes` decision rule are unchanged (#42).
+- `issue-creation` and `development` now **actively apply** the `STANDARDS.md` principles rather than merely referencing them — factored into the drafted design (Proposed Approach / Approach), the implementation requirements (Technical Notes / design document), and seeded acceptance criteria; both consider every row and ignore `Severity`. The generic duplicated `## Constraints` bullets that mirrored these standards were consolidated to a single pointer at `STANDARDS.md` (all task-specific constraints preserved inline), skipping gracefully when the file is absent (#43).
+- The `code-review` Summary Comment checklist is now **dynamic**: a single rolled-up "linked-issue acceptance criteria addressed" line (omitted when there is no linked issue) plus one row per `STANDARDS.md` category (Universal + per-repo), driven by the sub-agent's per-category output. The fixed-key checklist object and the hardcoded markdown list were converted in lockstep; a minimal built-in category set is used when `STANDARDS.md` is absent (#44).
+- `init` now generates `STANDARDS.md` by **reading its template** (single source) instead of emitting an inline table — matching how `TEST-MATRIX.md` / `PRD-MANIFEST.md` / `SPEC-MANIFEST.md` are generated — with an interactive step to add or remove Universal principles. All `REVIEW-CRITERIA.md` reference sites across `init` were updated, and the config-structure `pw-version` was bumped `1.3.0` → `1.4.0` in lockstep across every generation stamp and stamped template. Update Mode migrates a legacy `REVIEW-CRITERIA.md` → `STANDARDS.md` on the new schema (renaming the file, carrying content across with severity floors, fixing the typo) so already-initialized projects don't lose their criteria after `code-review` switched to reading `STANDARDS.md` (#45).
+
 ## [1.5.0] - 2026-08-06
 
 ### Added
