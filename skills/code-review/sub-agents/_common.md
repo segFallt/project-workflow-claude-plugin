@@ -46,12 +46,10 @@ Review every changed file against the standards{review history clause}. Return y
   ],
 {additional output fields — extra JSON fields between findings and checklist; omit this line if none}
   "checklist": {
-    "no_secrets": true | false,
-    "no_generated_file_edits": true | false,
-    "tests_included": true | false | "not_applicable",
-    "error_handling_adequate": true | false,
-    "naming_conventions_followed": true | false,
-    "issue_addressed": true | false | "no_linked_issue"
+    "linked_issue_ac_addressed": true | false | "no_linked_issue",
+    "categories": [
+      { "category": "<Standards category name, e.g. Security>", "status": "pass" | "fail" | "not_applicable" }
+    ]
   }
 }
 
@@ -59,6 +57,7 @@ Rules:
 - Verdict is "request_changes" if ANY finding has severity "critical" or "warning"
 - Verdict is "approve" only if there are no critical or warning findings
 - Check every row in the Standards section against the diff. When a finding maps to a Standards row, decide which row it violates and take that row's `Severity` as the finding's floor: you may escalate to a higher severity for a clearly worse instance, but never assign a severity below the floor. Findings that map to no row use your own severity judgment. If the Standards section says none is configured, use your own severity judgment for all findings.
+- Populate `checklist.categories` with **one entry per Standards row you checked** (Universal Principles + the repo's section), using the row's Category name and a `status` of `pass`, `fail`, or `not_applicable`. If the Standards section says none is configured, emit a minimal built-in set instead: `Security`, `Generated files`, `Tests`, `Error handling`, `Naming`. Set `checklist.linked_issue_ac_addressed` to whether the diff satisfies the linked issue's acceptance criteria, or `"no_linked_issue"` when there is no linked issue.
 {additional rules (pre)}
 - Be specific: reference exact file names and line numbers
 - Be actionable: say what should change, not just what's wrong
