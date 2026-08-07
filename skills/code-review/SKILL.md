@@ -246,16 +246,16 @@ Use this template for the summary comment on every reviewed CR. For Phase 1 (ini
 {list praise items}
 
 ### Checklist
-- [{x or space}] No hardcoded secrets
-- [{x or space}] No generated file edits
-- [{x or space}] Tests included (if applicable)
-- [{x or space}] Error handling adequate
-- [{x or space}] Naming conventions followed
-- [{x or space}] Linked issue addressed (if applicable)
+{Rendered dynamically from the sub-agent's `checklist` object — see the rules below the template. Do not hardcode rows.}
 
 ```
 
 > The `<!-- claude-review -->` marker on the first line is **required** — it's used for deduplication.
+
+**Rendering the Checklist** (from the sub-agent's `checklist` object):
+
+- **Rolled-up AC line** — when `checklist.linked_issue_ac_addressed` is not `"no_linked_issue"`, emit exactly one line: `- [x] Linked-issue acceptance criteria addressed` if it is `true`, or `- [ ] Linked-issue acceptance criteria addressed` if `false`. Omit this line entirely when there is no linked issue (`"no_linked_issue"`).
+- **Per-category rows** — for each entry in `checklist.categories`, emit `- [x] {category}` when its `status` is `pass`, `- [ ] {category}` when `fail`, or `- [x] {category} (n/a)` when `not_applicable`. These categories are driven by `STANDARDS.md` (Universal Principles + the repo's section); when `STANDARDS.md` is absent the sub-agent supplies a minimal built-in set instead (`Security`, `Generated files`, `Tests`, `Error handling`, `Naming`).
 
 ### Inline Comments
 
