@@ -39,7 +39,7 @@ Tell the user:
 > This will configure:
 > - **PROJECT.md** — the central project reference (required for all skills)
 > - **.env / .env.example** — API token configuration
-> - **REVIEW-CRITERIA.md** — if you plan to use the `code-review` skill
+> - **STANDARDS.md** — if you plan to use the `code-review` skill
 > - **TEST-MATRIX.md** — if you plan to use the `testing-static`, `testing-spec`, or `testing-prd` skills
 > - **SPEC-MANIFEST.md** — if you plan to use the `testing-spec` skill
 > - **PRD-MANIFEST.md** — if you plan to use the legacy `testing-prd` skill"
@@ -67,7 +67,7 @@ From the answers, **derive automatically** (do not ask):
 **Generate immediately:** Write `.claude/project-config/PROJECT.md` with the following content populated from the answers. In the skeleton below, `{not-configured stanza}` marks a section not yet collected — when writing the file, expand each `{not-configured stanza}` to the exact two-line marker defined in the **Not-Configured Marker** reference section near the end of this skill. The skeleton's 14 `##` headings are exactly the canonical **Required Section Headings** (listed near the end) — keep every heading exactly as written, in order. The first line of the file **must** be the version stamp.
 
 ```
-<!-- pw-version: 1.3.0 -->
+<!-- pw-version: 1.4.0 -->
 # {project_name} — Project Reference
 
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns.
@@ -496,58 +496,36 @@ Ask the user (use `AskUserQuestion` tool with multi-select):
 > Options:
 > - `development` — implement features and fix bugs (uses PROJECT.md only — already done)
 > - `issue-creation` — create well-structured issues (uses PROJECT.md only — already done)
-> - `code-review` — automated code review (needs REVIEW-CRITERIA.md)
+> - `code-review` — automated code review (needs STANDARDS.md)
 > - `testing-static` — integration testing with static test matrix (needs TEST-MATRIX.md)
 > - `testing-spec` — integration testing from specs: PRDs, issues, `.feature` files (needs TEST-MATRIX.md + SPEC-MANIFEST.md)
 > - `testing-prd` — integration testing driven by your PRDs (needs TEST-MATRIX.md + PRD-MANIFEST.md; superseded by `testing-spec`)
 
-**For `code-review`:** Generate `.claude/project-config/REVIEW-CRITERIA.md` with the following structure. For the per-repo sections, generate one `## {repo_name}` section for each repository collected in Step 4 — do not write a for-loop literally; expand it into actual sections.
+**For `code-review`:** Generate `.claude/project-config/STANDARDS.md` by **reading the template** at `skills/init/templates/STANDARDS.md` (in the same plugin directory as this skill file). This template is the **single source** — do not inline its content here. Keep its `<!-- pw-version: 1.4.0 -->` first line and its `## Universal Principles` table.
 
-```
-<!-- pw-version: 1.3.0 -->
-# Review Criteria
+**Interactive Universal Principles.** Present the seed Universal Principles rows from the template and ask the user to tailor them:
 
-Per-repo review criteria. Read the relevant section when reviewing an MR for a given repo. The **Universal** criteria apply to all repos regardless.
+> "Here are the seed Universal Principles applied to every repo: {list each seed row's Category — Severity}. Would you like to **add** any project-specific principles, or **remove** any seed rows you don't want? (`Severity` is read only by `code-review`, as a floor; `issue-creation` and `development` apply every row and ignore it.)"
 
-## Universal
+Apply their answers — for each added principle collect a Category, a "What to check" description, and a `Severity` floor (`critical`/`warning`/`suggestion`); drop any seed rows they reject — then write the final `## Universal Principles` table.
 
-| Category | What to check |
-|----------|---------------|
-| **SOLID** | Code adheres to SOLID principals **critical** |
-| **Security** | No hardcoded secrets, tokens, passwords, or API keys in code or config |
-| **Generated files** | No manual edits to files under `gen/`, `node_modules/`, `dist/`, or build output |
-| **Error handling** | Errors are handled, not swallowed silently; no bare `catch {}` or `except: pass` |
-| **Naming** | Variables, functions, and types follow the repo's established conventions |
-| **Tests** | Non-trivial logic changes should include or update tests. This is critical. |
-| **Debug artifacts** | No `console.log`, `print()` debugging, `TODO/FIXME` left in (unless clearly intentional) |
-| **Dependencies** | New dependencies are justified; no unnecessary additions |
-
----
-
-## Per-Repository Review Criteria
-
-> Add one section per repository below. Each section should focus on checks specific to that repo's tech stack, conventions, and common pitfalls.
-```
-
-Generate one block like the following for each repo from Step 4, expanded into actual `## {repo_name}` sections:
+**Per-repo sections.** Expand the template's per-repo `## <REPO_NAME>` block into one `## {repo_name}` section for each repository collected in Step 4 (do not write a for-loop literally; expand it into actual sections), on the same `Category | What to check | Severity` schema:
 
 ```
 ## {repo_name}
 
-| Check | Details |
-|-------|---------|
-| <!-- Add repo-specific checks here --> | <!-- What to verify --> |
+| Category | What to check | Severity |
+|----------|---------------|----------|
+| <!-- Add repo-specific standards here --> | <!-- What to verify --> | <!-- critical | warning | suggestion --> |
 
-> Run `/project-workflows:init` and select "Configure code-review" to fill in repo-specific criteria interactively.
+> Run `/project-workflows:init` and select "Configure code-review" to fill in repo-specific standards interactively.
 ```
 
-Then ask: "Would you like to fill in repo-specific review criteria for any of your repos now? If yes, tell me which repos and what checks matter most for each (common mistakes in the tech stack, project conventions, etc.)."
-
-If they provide criteria, update the relevant `## {repo_name}` sections with populated rows.
+Then ask: "Would you like to fill in repo-specific standards for any of your repos now? If yes, tell me which repos, the checks that matter most for each (common mistakes in the tech stack, project conventions), and a `Severity` for each." If they provide standards, update the relevant `## {repo_name}` sections with populated rows.
 
 **For `testing-static`, `testing-spec`, or `testing-prd`:** Generate `.claude/project-config/TEST-MATRIX.md`:
 
-Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.3.0 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
+Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.4.0 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
 
 - **Docker Compose Startup Sequence:** Replace `<WORKTREES_BASE>` with the actual worktrees base from Step 5. Replace `<DEPLOY_REPO>` with the deploy repo from Step 5. Fill in the migration command (Step 4) and seed command (Step 5) if provided; otherwise leave the `<!-- REPLACE THIS -->` markers.
 - **All `<!-- REPLACE THIS: ... -->` comment blocks:** Keep them in place so the user knows what to fill in. Do NOT remove these markers — they are review prompts for the user.
@@ -564,13 +542,13 @@ Ask:
 > - Test method (curl HTTP calls, Playwright, etc.)
 > - Priority: Must Have / Should Have / Nice to Have"
 
-Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.3.0 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
+Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.4.0 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
 
-**For `testing-spec`:** Generate `.claude/project-config/SPEC-MANIFEST.md` from `skills/init/templates/SPEC-MANIFEST.md`. Keep the `<!-- pw-version: 1.3.0 -->` first line, fill the **Spec Sources** table from the docs root and spec sources captured in the Design Documentation step (PRD directory, `.feature` globs, issue references), and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` from the user's answers. Retain the `PRD-MANIFEST.md` template this release — `testing-spec` reads `SPEC-MANIFEST.md` and falls back to a legacy `PRD-MANIFEST.md`.
+**For `testing-spec`:** Generate `.claude/project-config/SPEC-MANIFEST.md` from `skills/init/templates/SPEC-MANIFEST.md`. Keep the `<!-- pw-version: 1.4.0 -->` first line, fill the **Spec Sources** table from the docs root and spec sources captured in the Design Documentation step (PRD directory, `.feature` globs, issue references), and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` from the user's answers. Retain the `PRD-MANIFEST.md` template this release — `testing-spec` reads `SPEC-MANIFEST.md` and falls back to a legacy `PRD-MANIFEST.md`.
 
 **For any skill NOT selected:** Still create the config file (so it exists and is discoverable) but with a clear header:
 ```
-<!-- pw-version: 1.3.0 -->
+<!-- pw-version: 1.4.0 -->
 <!-- pw-status: not-configured -->
 > **Note:** This file has not been configured yet. Run `/project-workflows:init` and select the relevant skill to set it up interactively.
 ```
@@ -627,7 +605,7 @@ Config directory: `.claude/project-config/`
 ### Config Files
 
 - **PROJECT.md** — Central project reference: architecture, repos, tech stacks, source control settings, and worktree conventions. Fill this in first — all other files and skills reference it.
-- **REVIEW-CRITERIA.md** — Per-repo and universal code review criteria used by the `code-review` skill.
+- **STANDARDS.md** — Shared, severity-graded engineering standards (Universal Principles + per-repo) used by `code-review` (as severity floors) and applied by `issue-creation` and `development`.
 - **TEST-MATRIX.md** — Integration test matrix: startup sequence, infrastructure checks, service health checks, and browser tests used by the `testing-static`, `testing-spec`, and `testing-prd` skills.
 - **SPEC-MANIFEST.md** — Spec discovery and extraction rules (PRDs, issues, Gherkin `.feature` files), test ID prefixes, and feature priorities used by the `testing-spec` skill.
 - **PRD-MANIFEST.md** — Legacy PRD discovery rules, test ID prefixes, and feature priorities used by the `testing-prd` skill (superseded by SPEC-MANIFEST.md).
@@ -705,9 +683,9 @@ Example output format:
 
 | File | Version | Status | Notes |
 |------|---------|--------|-------|
-| PROJECT.md | 1.3.0 | 10/14 sections configured | Unconfigured: API Endpoints, DB Schema, Cross-Cutting, Git Tags |
-| REVIEW-CRITERIA.md | 1.3.0 | Scaffolded | Per-repo criteria not yet filled in |
-| TEST-MATRIX.md | 1.3.0 | Partial | 3 REPLACE THIS markers remain |
+| PROJECT.md | 1.4.0 | 10/14 sections configured | Unconfigured: API Endpoints, DB Schema, Cross-Cutting, Git Tags |
+| STANDARDS.md | 1.4.0 | Scaffolded | Per-repo standards not yet filled in |
+| TEST-MATRIX.md | 1.4.0 | Partial | 3 REPLACE THIS markers remain |
 | PRD-MANIFEST.md | — | Not created | |
 | .env | — | Present | API_TOKEN_ENV_VAR set |
 ```
@@ -721,7 +699,7 @@ Ask the user what they want to do (use `AskUserQuestion`):
 > Options:
 > - **Add a new repository** — add a repo to PROJECT.md and all secondary config files
 > - **Fill in a PROJECT.md section** — re-interview a specific section
-> - **Configure a skill** — generate or reconfigure REVIEW-CRITERIA.md, TEST-MATRIX.md, SPEC-MANIFEST.md, or PRD-MANIFEST.md
+> - **Configure a skill** — generate or reconfigure STANDARDS.md, TEST-MATRIX.md, SPEC-MANIFEST.md, or PRD-MANIFEST.md
 > - **Update repository details** — edit an existing repo's tech stack, commands, or paths
 > - **Refresh all** — re-interview everything (existing answers are shown as defaults)
 > - **Something else** — describe what you want to change
@@ -733,7 +711,7 @@ Handle each option:
 - Append a new row to the `## Repository Locations` table.
 - Append a new `### {repo_name}` block under `## Tech Stacks Per Repo`.
 - If a `## Repository Dependency Order` section exists and is populated, ask where the new repo fits in the order and update the table.
-- If REVIEW-CRITERIA.md exists with `<!-- pw-version:`, append a new empty `## {repo_name}` section under `## Per-Repository Review Criteria`.
+- If STANDARDS.md exists with `<!-- pw-version:`, append a new empty `## {repo_name}` section under `## Per-Repository Standards`.
 - If TEST-MATRIX.md exists with `<!-- pw-version:`, note to the user: "TEST-MATRIX.md was not automatically updated — if this repo has a service with health endpoints, add a `## Service Health Checks` block for it manually or run `/project-workflows:init` → 'Configure a skill' → testing-static/testing-prd."
 - Confirm what was updated.
 
@@ -766,11 +744,18 @@ Handle each option:
 
 > **`pw-version` is the config-structure version, not the plugin release version.** They are deliberately decoupled: `pw-version` changes only when the config-file structure changes, whereas the plugin's release version (`plugin.json`) advances on every release. Never reconcile one to the other.
 
-The current config-structure version is `1.3.0`. If any file's `<!-- pw-version:` stamp reads `1.0.0`, `1.0.1`, or `1.2.0`, offer to migrate it (match version strings explicitly — e.g. `reads 1.2.0` — rather than by numeric comparison, to avoid ambiguity with strings like `1.10.0`):
+The current config-structure version is `1.4.0`. If any file's `<!-- pw-version:` stamp reads `1.0.0`, `1.0.1`, `1.2.0`, or `1.3.0`, offer to migrate it (match version strings explicitly — e.g. `reads 1.3.0` — rather than by numeric comparison, to avoid ambiguity with strings like `1.10.0`):
 
-> "Some config files use an older structure (`{stamp}`). I can migrate them to the current structure (`1.3.0`) while preserving your content. Changes up to 1.3.0: `§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md and `testing-2.md` → `testing-prd` in PRD-MANIFEST.md (from 1.0.0); and, for 1.3.0, `PROJECT.md § Design Documentation` gains `### Documentation Profile`, `### Docs Root`, and `### Spec Sources` subsections, plus a new `SPEC-MANIFEST.md` for `testing-spec`. Would you like to migrate now?"
+> "Some config files use an older structure (`{stamp}`). I can migrate them to the current structure (`1.4.0`) while preserving your content. Changes up to 1.3.0: `§ Infrastructure` → `§ Local Development` in TEST-MATRIX.md and `testing-2.md` → `testing-prd` in PRD-MANIFEST.md (from 1.0.0); and, for 1.3.0, `PROJECT.md § Design Documentation` gains `### Documentation Profile`, `### Docs Root`, and `### Spec Sources` subsections, plus a new `SPEC-MANIFEST.md` for `testing-spec`. For 1.4.0, `REVIEW-CRITERIA.md` is renamed to `STANDARDS.md` on the normalized `Category | What to check | Severity` schema (`## Universal` → `## Universal Principles`; per-repo sections gain a `Severity` column). Would you like to migrate now?"
 
-If yes: read the existing content, extract user-populated values by section, regenerate each file with the current structure, and update the version stamp to `1.3.0`. Adding the Design Documentation subsections does **not** add any `##` heading, so the required-headings list is unchanged.
+If yes: read the existing content, extract user-populated values by section, regenerate each file with the current structure, and update the version stamp to `1.4.0`. Adding the Design Documentation subsections does **not** add any `##` heading, so the required-headings list is unchanged. For the `REVIEW-CRITERIA.md` → `STANDARDS.md` rename specifics, see the dedicated migration block below.
+
+**Legacy `REVIEW-CRITERIA.md` → `STANDARDS.md` (1.4.0 rename):** if a `REVIEW-CRITERIA.md` is present, migrate it as part of the confirmed migration above — without this, `code-review` (which now reads `STANDARDS.md`) would find no standards file and fall back to its built-in framework, silently dropping the project's existing criteria:
+
+- Write `.claude/project-config/STANDARDS.md` by reading the template at `skills/init/templates/STANDARDS.md` (single source), keeping its `<!-- pw-version: 1.4.0 -->` first line.
+- Carry the user's content across: map the old `## Universal` rows into `## Universal Principles` on the `Category | What to check | Severity` schema, and copy each `## {repo_name}` section, adding a `Severity` column. Assign each migrated row a `Severity` floor — default the standard categories to the seed floors (Security `critical`; Generated files / Error handling / Tests / Dependencies / SOLID `warning`; Naming / Debug artifacts `suggestion`) and ask the user to pick a floor for any custom rows (default `warning`).
+- Fix the legacy `SOLID` "principals" typo and drop any inline `**critical**` / prose-encoded severity markers — those move into the `Severity` column.
+- Delete the old `REVIEW-CRITERIA.md` once `STANDARDS.md` is written.
 
 **Legacy `PRD-MANIFEST.md` → `SPEC-MANIFEST.md` (user-confirmed, never automatic):** if a `PRD-MANIFEST.md` is present and no `SPEC-MANIFEST.md` exists, prompt:
 
@@ -805,7 +790,7 @@ The following headings in `PROJECT.md` are read by other skills and **must appea
 - `## Design Documentation`
 - `## Git Tags`
 
-`REVIEW-CRITERIA.md` must have `## Universal` and one `## {repo_name}` section per repo.
+`STANDARDS.md` must have `## Universal Principles` and one `## {repo_name}` section per repo.
 
 `PRD-MANIFEST.md` must have `## PRD Directory`, `## Extraction Rules`, `## Test ID Prefixes`, `## Feature Priorities`, `## Deduplication Rules`.
 
@@ -815,7 +800,7 @@ The following headings in `PROJECT.md` are read by other skills and **must appea
 
 ### Version Stamp Format
 
-Always place `<!-- pw-version: 1.3.0 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
+Always place `<!-- pw-version: 1.4.0 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
 
 ### Not-Configured Marker
 

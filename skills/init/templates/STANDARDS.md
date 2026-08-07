@@ -1,4 +1,4 @@
-<!-- pw-version: 1.3.0 -->
+<!-- pw-version: 1.4.0 -->
 # Standards
 
 > **Note:** This file is the **single source** the init skill reads at generation time to produce a project's `STANDARDS.md` (like `TEST-MATRIX.md`, `PRD-MANIFEST.md`, and `SPEC-MANIFEST.md`). It is no longer a reference-only copy — init fills/trims it and writes it out. Keep the required headings and column shape below intact; a smoke-test check guards them.
