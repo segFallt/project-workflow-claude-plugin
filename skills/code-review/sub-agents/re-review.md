@@ -12,7 +12,7 @@ Dispatch the **Shared Prompt Template** in `./_common.md`, substituting the shar
 
 - `{additional CR Details}` — one extra bullet:
   - `- **Review Round:** {review_round}`
-- `{additional input sections}` — insert these two sections (after `## Linked Issue`, before `## Review Criteria`):
+- `{additional input sections}` — insert these two sections (after `## Linked Issue`, before `## Standards`):
 
   ```
   ## Previous Review Findings (Round {review_round - 1})
@@ -37,7 +37,7 @@ Dispatch the **Shared Prompt Template** in `./_common.md`, substituting the shar
     ],
   ```
 - `{additional rules (pre)}`:
-  - `- For each previous "critical" or "warning" finding: if it has been addressed, add a "praise" finding acknowledging it. If it has NOT been addressed, re-raise it with the original severity`
+  - `- For each previous "critical" or "warning" finding: if it has been addressed, add a "praise" finding acknowledging it. If it has NOT been addressed, re-raise it with the original severity (which already respects any Standards floor — do not downgrade it below that floor)`
   - `- Flag any NEW issues introduced by the author's changes that were not present in the previous review`
 - `{additional rules (post)}`:
   - `- Do NOT re-flag issues that have been resolved`
