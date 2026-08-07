@@ -18,6 +18,7 @@ You are a **coordinator**. You delegate code writing and test authoring to sub-a
 ## Prerequisites
 
 - **`.claude/project-config/PROJECT.md`** — populated; the source of truth for all repo and host configuration (see `../../shared/environment-setup.md`)
+- **`.claude/project-config/STANDARDS.md`** — optional; shared engineering standards actively applied as implementation requirements and in the design document (every row; `Severity` ignored). Absent → skip gracefully
 - **`API_TOKEN_ENV_VAR`** — repository-host personal access token, sourced from `<ENV_FILE_PATH>`; never use the project owner's personal credentials directly
 - **`curl`** and **`git`** — required for API calls and repo/git operations
 
@@ -91,7 +92,7 @@ Read `../../shared/api-dispatch.md`.
    - Proto definitions (if contract changes — must be done first)
    - Helm/Compose changes (if infrastructure changes)
 3. **Consider cross-repo impacts** — if the change touches a shared-contract repo (see `PROJECT.md § Repository Dependency Order`), all downstream repos need corresponding updates
-4. **Draft a Design Document** (see Structured Output Templates below)
+4. **Draft a Design Document** (see Structured Output Templates below) — where `.claude/project-config/STANDARDS.md` is present, actively apply its principles (Universal Principles + the affected repo's section; consider every row, ignore `Severity`): reflect the applicable ones in the **Approach** and **Risks**, and carry them into Phase 3 as implementation requirements passed to the implementation sub-agents. Skip gracefully when `STANDARDS.md` is absent.
 5. **Present the design to the user** and wait for approval before writing any code
 6. **Write initial state file** — after the user approves the design, write the state file using the atomic write pattern from `../../shared/state-tracking.md`:
    - Path: `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/{branch-slug}.json`
@@ -349,7 +350,7 @@ Present this to the user for approval before writing any code:
 | {repo_name} | {list} | {list or "none"} |
 
 ### Approach
-{Clear description of the solution — include data flow, API contract changes, state changes, and any new abstractions}
+{Clear description of the solution — include data flow, API contract changes, state changes, and any new abstractions. Reflect applicable `STANDARDS.md` principles (Universal + repo) in the described approach.}
 
 ### Alternatives Considered
 {Brief note on any alternatives evaluated and why the chosen approach is preferred. Omit if no meaningful alternatives exist.}
@@ -364,7 +365,7 @@ Present this to the user for approval before writing any code:
 {If multiple repos are involved, list them and the merge order per `PROJECT.md § Repository Dependency Order`. "None" if single-repo.}
 
 ### Risks
-{Anything that could go wrong — breaking changes, data migrations, race conditions, rollback complexity. "None" if low-risk.}
+{Anything that could go wrong — breaking changes, data migrations, race conditions, rollback complexity. Note any applicable `STANDARDS.md` principle at risk (e.g., a change that could weaken error handling or test coverage). "None" if low-risk.}
 ```
 
 ---

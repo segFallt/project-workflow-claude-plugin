@@ -27,6 +27,7 @@ Before running this skill, ensure the following are in place:
 | Type | Item | Notes |
 |------|------|-------|
 | Config | `.claude/project-config/PROJECT.md` | Must be populated — this is the source of truth for all repo and host configuration |
+| Config | `.claude/project-config/STANDARDS.md` | Optional — shared engineering standards. When present, actively applied to the draft's design, implementation requirements, and acceptance criteria (every row; `Severity` ignored). Absent → skip gracefully |
 | Env var | `API_TOKEN_ENV_VAR` | Personal access token for the repository host — must be sourced from `<ENV_FILE_PATH>`; never use the project owner's personal credentials directly |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
@@ -73,7 +74,7 @@ Read `../../shared/api-dispatch.md`.
 
 ### Phase 2: Codebase Exploration & Repo Assignment
 
-1. **Read `.claude/project-config/PROJECT.md`** to understand the architecture and repo responsibilities
+1. **Read `.claude/project-config/PROJECT.md`** to understand the architecture and repo responsibilities. **Also read `.claude/project-config/STANDARDS.md` if present** (optional) — its Universal Principles and the affected repo's section are actively applied when composing the issue (Phase 4)
 2. **Identify the affected repo(s)** using the Repo Assignment Guide below
 3. **Search for duplicate issues** — call the search endpoint with 2–3 keywords from the proposed title
    - If a close duplicate is found: present it to the user and ask whether to proceed or link to the existing issue
@@ -99,8 +100,14 @@ Use the sub-agent's structured output (from Phase 2) to fill in technical detail
 2. **Fetch available labels** via API — only use labels that actually exist
 3. **Fetch active milestones** via API — assign a milestone if the user specified one or if one is clearly appropriate
 4. **Draft the issue** with all sections filled in
-5. **Present the draft to the user** for review — include the proposed title, labels, milestone, and full description
-6. **Wait for user approval** (or iterate on the draft based on feedback)
+5. **Apply the STANDARDS principles** (when `STANDARDS.md` is present) — consider **every** row (Universal Principles + the affected repo's section), ignore the `Severity` column, and actively factor the applicable ones into the draft:
+   - **Design** — reflect applicable principles in **Proposed Approach** (e.g., SOLID and error-handling shape the described approach)
+   - **Implementation requirements** — surface applicable principles in **Technical Notes** / implementation guidance
+   - **Acceptance criteria** — seed ACs from applicable principles (e.g., a non-trivial logic change → a Tests AC; a new dependency → a "dependency justified" AC)
+
+   Skip this step when `STANDARDS.md` is absent.
+6. **Present the draft to the user** for review — include the proposed title, labels, milestone, and full description
+7. **Wait for user approval** (or iterate on the draft based on feedback)
 
 ### Phase 5: Issue Creation
 
@@ -226,7 +233,7 @@ Feature: {the capability affected by the bug}
 
 ## Proposed Approach
 
-{High-level description of how this could be implemented. Include API design, UI changes, or data model changes if known.}
+{High-level description of how this could be implemented. Include API design, UI changes, or data model changes if known. Reflect applicable `STANDARDS.md` principles (design cornerstones) in the approach.}
 
 ## Affected Components
 
@@ -256,7 +263,7 @@ Feature: {the capability this feature provides}
 
 ## Technical Notes
 
-{Any constraints, dependencies on other issues or external systems, or implementation risks identified during codebase exploration}
+{Any constraints, dependencies on other issues or external systems, or implementation risks identified during codebase exploration. Surface applicable `STANDARDS.md` principles as implementation requirements.}
 
 **Affected files (preliminary):**
 {list from sub-agent output}

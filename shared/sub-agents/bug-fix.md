@@ -35,9 +35,7 @@ The orchestrator creates the worktree and resolves identity/push credentials per
 Do not create worktrees, run `git fetch`, modify git config, or switch branches. The worktree and branch are already set up by the orchestrator.
 
 ## Constraints
-- Follow existing code conventions (see `.claude/project-config/PROJECT.md`)
-- Do not modify generated files under `gen/`
-- Do not add unnecessary dependencies
+- Apply `.claude/project-config/STANDARDS.md` if present (Universal Principles + this repo's section; consider every row, ignore the `Severity` column) — it covers the generic engineering standards: following PROJECT.md conventions, not hand-editing generated files under `gen/`, and no unnecessary dependencies. If `STANDARDS.md` is absent, follow the existing code conventions in `.claude/project-config/PROJECT.md` for this repo.
 
 ## Repo-Specific Commands
 

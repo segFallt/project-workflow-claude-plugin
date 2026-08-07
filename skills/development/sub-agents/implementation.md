@@ -38,10 +38,8 @@ Implement the following changes in `{repo_name}`:
 - Use `-c` flags for identity when committing (values provided by orchestrator). Do not run `git config` or `git remote set-url`.
 
 ## Constraints
-- Follow all conventions in `.claude/project-config/PROJECT.md` for this repo
-- Do not modify generated files under `gen/` — run `./scripts/generate.sh` for proto changes
-- Do not add unnecessary dependencies
-- Match existing code style exactly — naming, error handling, comment style
+- Apply `.claude/project-config/STANDARDS.md` if present (Universal Principles + this repo's section; consider every row, ignore the `Severity` column) — it covers the generic engineering standards: following PROJECT.md conventions, no unnecessary dependencies, not hand-editing generated files, and matching existing code style (naming, error handling, comment style). If `STANDARDS.md` is absent, follow the conventions in `.claude/project-config/PROJECT.md` for this repo.
+- For proto changes, regenerate `gen/` via `./scripts/generate.sh` — never hand-edit generated files
 - All new functions must have correct types/signatures per the repo's conventions
 
 ## Reference Patterns
