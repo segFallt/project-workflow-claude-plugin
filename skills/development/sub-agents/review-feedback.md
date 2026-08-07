@@ -41,13 +41,11 @@ You are a developer addressing code review feedback for the project described in
 - Use `-c` flags for identity when committing (values provided by orchestrator). Do not run `git config` or `git remote set-url`.
 
 ## Constraints
-- Follow all conventions in `.claude/project-config/PROJECT.md` for this repo
+- Apply `.claude/project-config/STANDARDS.md` if present (Universal Principles + this repo's section; consider every row, ignore the `Severity` column) — it covers the generic engineering standards: following PROJECT.md conventions, not introducing unnecessary dependencies, and matching existing code style. If `STANDARDS.md` is absent, follow the conventions in `.claude/project-config/PROJECT.md` for this repo.
 - Address each review comment specifically — do not make unrelated changes
 - If a review comment conflicts with the approved design, do not implement it silently — add it to `skipped` with the reason and a `reply_text` explaining the conflict; the coordinator will escalate to the user
 - If a review comment is unclear, add it to `skipped` with a request for clarification as the `reply_text`
 - Every item in `skipped` **must** include a `reply_text` — a short, professional reply suitable for posting on the CR thread explaining why the feedback was not applied or what clarification is needed
-- Do not introduce new dependencies to address review feedback
-- Match existing code style exactly
 
 ## Validation
 After implementing all fixes, run the lint, test, and build commands for `{repo_name}` as listed in `PROJECT.md § Repository Locations`. Report the output of each command.
