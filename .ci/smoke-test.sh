@@ -109,6 +109,26 @@ for skill_md in "$REPO_ROOT/skills"/*/SKILL.md; do
   done
 done
 
+# ── 5. STANDARDS.md template carries its required headings/columns ───────────
+#
+# .ci/smoke-test.sh's directory globs (checks 1-4) do not reach
+# skills/init/templates/*, so a renamed or malformed STANDARDS.md template would
+# otherwise slip through CI. This check guards the template init reads as its
+# single source: the `## Universal Principles` heading and the normalized
+# `Category | What to check | Severity` column header must both be present.
+
+standards_tmpl="$REPO_ROOT/skills/init/templates/STANDARDS.md"
+
+if [ ! -f "$standards_tmpl" ]; then
+  fail "skills/init/templates/STANDARDS.md does not exist"
+elif ! grep -q '^## Universal Principles' "$standards_tmpl"; then
+  fail "skills/init/templates/STANDARDS.md missing '## Universal Principles' heading"
+elif ! grep -q '^| Category | What to check | Severity |' "$standards_tmpl"; then
+  fail "skills/init/templates/STANDARDS.md missing 'Category | What to check | Severity' column header"
+else
+  pass "skills/init/templates/STANDARDS.md has required headings and columns"
+fi
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 if [ "$FAILED" -eq 0 ]; then
