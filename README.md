@@ -59,7 +59,7 @@ This creates the following files in `.claude/project-config/`:
 | File | Purpose |
 |------|---------|
 | `PROJECT.md` | Project overview, repositories, API credentials, team context |
-| `REVIEW-CRITERIA.md` | Code review standards and acceptance criteria |
+| `STANDARDS.md` | Shared, severity-graded engineering standards (Universal Principles + per-repo) applied by `code-review`, `issue-creation`, and `development` |
 | `TEST-MATRIX.md` | Static test matrix for the `testing-static` skill |
 | `SPEC-MANIFEST.md` | Spec discovery rules (PRDs, issues, `.feature` files) for the `testing-spec` skill |
 | `PRD-MANIFEST.md` | Product requirements for the legacy `testing-prd` skill |
