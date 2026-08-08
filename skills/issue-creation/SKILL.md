@@ -1,9 +1,11 @@
 ---
 name: issue-creation
-description: Use when creating a new issue from a problem description or feature request
+description: Deprecated — use work-item instead. Use when creating a new issue from a problem description or feature request
 ---
 
 # Issue Creator
+
+> **⚠️ Deprecated — use [`work-item`](../work-item/SKILL.md).** The `work-item` skill supersedes this one: it both creates issues from a description **and** refines existing work items toward "ready" over one shared, requirements-aware quality engine. This skill remains **functional this release** and is scheduled for **removal in a later major version**. New setups should use `work-item`.
 
 ## Role & Objective
 

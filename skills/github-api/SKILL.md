@@ -650,6 +650,63 @@ Search with 2-3 keywords from the issue title. Use `type:issue` to exclude pull 
 
 ---
 
+### 27. UPDATE_ISSUE
+
+Update an issue's body and labels (does not close it — see `CLOSE_ISSUE`).
+
+```bash
+curl -s -X PATCH \
+  -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "body": "{updated issue description}",
+    "labels": ["{label1}", "{label2}"]
+  }' \
+  "https://api.github.com/repos/<OWNER>/{repo_name}/issues/{issue_number}"
+```
+
+> **Note:** As with `CREATE_ISSUE`, `labels` takes an **array of strings**, and the array **replaces all** labels on the issue. To change labels incrementally instead, use the dedicated labels endpoints: `POST .../issues/{issue_number}/labels` (add) and `DELETE .../issues/{issue_number}/labels/{name}` (remove).
+
+**Optional request parameters:** `body`, `labels`, `milestone`, `assignees`.
+
+**Key response fields:** `number`, `body`, `labels`, `updated_at`, `html_url`.
+
+---
+
+### 28. LIST_ISSUES
+
+List issues filtered by state and labels (label/state filtering — for keyword search use `SEARCH_ISSUES`).
+
+**Repo-scoped (single repo):**
+```bash
+curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/<OWNER>/{repo_name}/issues?labels={labels}&state=open&per_page=100"
+```
+
+**Org-scoped (across the organization):**
+```bash
+curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/orgs/<OWNER>/issues?labels={labels}&state=open&per_page=100"
+```
+
+> **Note:** `labels` is a **comma-separated** string here (e.g. `bug,needs-triage`), unlike the array used by `CREATE_ISSUE`/`UPDATE_ISSUE`. Valid `state` values are `open`, `closed`, or `all`.
+
+> **Caveat on the org endpoint:** `GET /orgs/<OWNER>/issues` only returns issues in repos the token can access **and** that the authenticated user is involved in (assigned, created, mentioned, etc.) — it is not a complete org-wide issue list. For broad org queries, use the search API instead: `GET /search/issues?q=org:<OWNER>+type:issue+state:open+label:{label}` (see `SEARCH_ISSUES`).
+
+> **PRs included:** Like other GitHub issue endpoints, this list also returns pull requests. Filter out any object that has a `pull_request` field to keep only true issues.
+
+**Key response fields:** Array of issue objects with `number`, `title`, `body`, `labels`, `state`, `html_url`.
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) when filtering large issue sets.
+
+---
+
 ## Inline Comment Position Object
 
 The position fields are required when posting inline comments via `POST_CR_INLINE_COMMENT`. They tell GitHub exactly which line of which file to attach the comment to.

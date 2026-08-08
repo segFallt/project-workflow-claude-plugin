@@ -1,4 +1,4 @@
-<!-- pw-version: 1.4.0 -->
+<!-- pw-version: 1.5.0 -->
 # Spec Manifest
 
 Defines how the `testing-spec` skill's Phase 0 discovers and extracts checks from the project's **specifications** — PRDs, issues, and Gherkin `.feature` files. Generalizes the legacy `PRD-MANIFEST.md`; `testing-spec` reads this file, or falls back to `PRD-MANIFEST.md` when it is absent.

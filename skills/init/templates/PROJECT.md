@@ -198,6 +198,42 @@ Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` f
 
 ---
 
+## Work Item Conventions
+
+> [FILL IN] Host-agnostic conventions for how this project structures, types, and manages work items (issues, epics, tasks). Consumed as optional guidance by the `work-item` skill; leave a subsection unconfigured if it does not apply.
+
+### Hierarchy & Typing
+
+> [FILL IN] Define your work-item levels (e.g. epic → story → task), how item type is expressed (e.g. `type::` scoped labels), how parent/child links are formed, and any orthogonal label axes (priority, component, status) used alongside type.
+
+| Level | Type Label | Parent Link | Notes |
+|-------|------------|-------------|-------|
+| | | | |
+| | | | |
+
+**Orthogonal label axes:** _List label namespaces used alongside type (e.g. `priority::`, `component::`) and their allowed values._
+
+### Lifecycle & Status
+
+> [FILL IN] Define the status values a work item moves through, how the next item to work on is selected, and the transitions for advancing and closing an item.
+
+| Status | Meaning | Advance To | Set When |
+|--------|---------|------------|----------|
+| | | | |
+| | | | |
+
+**Selection:** _Describe how the next work item is chosen (e.g. highest-priority open item assigned to the current user)._
+
+### Comment & Body Conventions
+
+> [FILL IN] Define conventions for work-item bodies and comments.
+
+- _Body structure: what sections a well-formed item body contains._
+- _Comment conventions: prefixes, status-update format, when to comment._
+- _Cross-references: how to link commits, branches, and change requests._
+
+---
+
 ## API Endpoints
 
 > [FILL IN] List the primary API endpoints exposed by your services.

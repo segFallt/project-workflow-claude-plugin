@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-08-08
+
+### Added
+
+- New `work-item` skill: unifies issue **creation** (from a description) and **refinement** of existing work items toward "ready" over one shared, requirements-aware quality engine (#47).
+- Shared quality-engine modules consumed by `work-item`: `shared/requirements-context.md` (requirements grounding + bidirectional cross-check), `shared/work-item-quality-lens.md` (critique taxonomy + triage-and-escalate + output shaping), and `shared/work-item-templates.md` (Bug/Feature/Task body templates + refine summary-comment template) (#47).
+- `UPDATE_ISSUE` and `LIST_ISSUES` operations documented in the `gitlab-api`, `github-api`, and `gitea-api` reference skills (#47).
+- New canonical `## Work Item Conventions` section in `PROJECT.md` (Hierarchy & Typing / Lifecycle & Status / Comment & Body Conventions), with an `init` interview step and Update-Mode support (#47).
+
+### Changed
+
+- Config-structure `pw-version` bumped `1.4.0` → `1.5.0` (adds the `## Work Item Conventions` section); `init` U3 gains the `1.4.0` → `1.5.0` migration path (#47).
+- README skill count updated 12 → 13 (#47).
+
+### Deprecated
+
+- `issue-creation` is superseded by `work-item`. It remains **functional this release** and is scheduled for **removal in a later major version** (#47).
+
 ## [1.6.0] - 2026-08-07
 
 ### Added
