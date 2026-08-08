@@ -517,6 +517,51 @@ Search with 2-3 keywords from the issue title. Returns open issues with matching
 
 ---
 
+### 27. UPDATE_ISSUE
+
+Update an issue's description and labels (does not close it — see `CLOSE_ISSUE`).
+
+```bash
+curl -s -X PUT \
+  -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "{updated issue description}",
+    "labels": "{comma-separated label names}"
+  }' \
+  "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}"
+```
+
+**Optional request parameters:** `labels` (comma-separated string — **replaces all** labels on the issue), `add_labels` / `remove_labels` (comma-separated — add or remove labels incrementally without replacing the full set), `description`.
+
+**Key response fields:** `iid`, `description`, `labels`, `updated_at`, `web_url`.
+
+---
+
+### 28. LIST_ISSUES
+
+List issues filtered by state and labels (label/state filtering — for keyword search use `SEARCH_ISSUES`).
+
+**Group-scoped (all repos in the group):**
+```bash
+curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
+  "<API_BASE_URL>/api/v4/groups/<GROUP>/issues?labels={labels}&state=opened&per_page=100"
+```
+
+**Project-scoped (single repo):**
+```bash
+curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
+  "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues?labels={labels}&state=opened&per_page=100"
+```
+
+**Optional request parameters:** `labels` (comma-separated label names — matches issues carrying all listed labels), `state` (`opened`, `closed`, or `all`), `milestone`, `search`.
+
+**Key response fields:** Array of issue objects with `iid`, `title`, `description`, `labels`, `state`, `web_url`.
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) when filtering large issue sets.
+
+---
+
 ## Inline Comment Position Object
 
 The `position` object is required when posting inline comments via `POST_CR_INLINE_COMMENT`. It tells GitLab exactly which line of which file to attach the comment to.

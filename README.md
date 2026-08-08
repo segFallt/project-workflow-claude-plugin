@@ -4,7 +4,7 @@ Reusable workflow skills for code review, development, testing, and issue manage
 
 ## Overview
 
-`project-workflows` is a Claude Code plugin that provides 12 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
+`project-workflows` is a Claude Code plugin that provides 13 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
 
 The plugin is project-agnostic — it reads project-specific configuration from files in `.claude/project-config/` (scaffolded by the `init` skill) rather than hard-coding any project details.
 
@@ -15,7 +15,8 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 | `init` | Set up a new project to use the plugin — scaffolds config files |
 | `code-review` | Review all open change requests across configured repositories |
 | `development` | Implement a feature, bug fix, or task from an issue |
-| `issue-creation` | Create a well-structured issue from a problem description or feature request |
+| `work-item` | Create a work item from a description, or refine existing work items toward ready — one shared, requirements-aware quality engine |
+| `issue-creation` | **Deprecated** (removed next major) — superseded by `work-item`. Create a well-structured issue from a problem description or feature request |
 | `plain-language` | Guidance to keep generated prose from reading as LLM-written (user-invoked) |
 | `documentation` | Author and update right-sized project docs (BRD/PRD/SDD/TSD) from templates |
 | `testing-spec` | Run integration tests generated from specs — PRDs, issues, and Gherkin `.feature` criteria |
@@ -59,7 +60,7 @@ This creates the following files in `.claude/project-config/`:
 | File | Purpose |
 |------|---------|
 | `PROJECT.md` | Project overview, repositories, API credentials, team context |
-| `STANDARDS.md` | Shared, severity-graded engineering standards (Universal Principles + per-repo) applied by `code-review`, `issue-creation`, and `development` |
+| `STANDARDS.md` | Shared, severity-graded engineering standards (Universal Principles + per-repo) applied by `code-review`, `development`, `work-item`, and `issue-creation` |
 | `TEST-MATRIX.md` | Static test matrix for the `testing-static` skill |
 | `SPEC-MANIFEST.md` | Spec discovery rules (PRDs, issues, `.feature` files) for the `testing-spec` skill |
 | `PRD-MANIFEST.md` | Product requirements for the legacy `testing-prd` skill |
@@ -74,8 +75,9 @@ Once configured, invoke skills using the Claude Code slash command syntax:
 ```
 /project-workflows:code-review
 /project-workflows:development
+/project-workflows:work-item
 /project-workflows:issue-creation
-/project-workflows:testing-prd
+/project-workflows:testing-spec
 /project-workflows:testing-static
 ```
 

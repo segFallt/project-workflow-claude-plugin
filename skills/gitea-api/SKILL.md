@@ -619,6 +619,48 @@ Search with 2-3 keywords from the issue title. Use `type=issues` to exclude pull
 
 ---
 
+### 27. UPDATE_ISSUE
+
+Update an issue's body and title (does not close it — see `CLOSE_ISSUE`).
+
+```bash
+curl -s -X PATCH \
+  -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "{updated issue description}"}' \
+  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}"
+```
+
+> **Labels are not editable via this PATCH body.** Gitea manages issue labels by **integer label ID** through a separate endpoint, not by name in the issue PATCH. To replace the full label set, use `PUT <INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}/labels` with `-d '{"labels": [{label_id_1}, {label_id_2}]}'`. Look up IDs with `LIST_LABELS`. The PATCH endpoint above edits `body`/`title` only.
+
+**Optional request parameters:** `body`, `title`, `milestone`, `assignees`.
+
+**Key response fields:** `number`, `body`, `labels`, `updated_at`, `html_url`.
+
+---
+
+### 28. LIST_ISSUES
+
+List issues filtered by state and labels (label/state filtering — for keyword search use `SEARCH_ISSUES`).
+
+**Repo-scoped (single repo):**
+```bash
+curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/json" \
+  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues?labels={labels}&state=open&type=issues&page=1&limit=50"
+```
+
+> **Note:** `labels` is a **comma-separated** list of label names. `type=issues` excludes pull requests from the results (Gitea's issues endpoint returns both otherwise). Valid `state` values are `open`, `closed`, or `all`.
+
+**Org-wide alternative:** to filter issues across an organization rather than a single repo, use the cross-repo search endpoint: `GET <INSTANCE_URL>/api/v1/repos/issues/search?labels={labels}&state=open&type=issues&limit=50`.
+
+**Key response fields:** Array of issue objects, each with `number`, `title`, `body`, `labels`, `state`, `html_url`.
+
+> **⚠️ Pagination required:** This endpoint may return limited results per page. Paginate through all pages (see Pagination section above) when filtering large issue sets.
+
+---
+
 ## Inline Comment Position Object
 
 The position fields are required when posting inline comments via `POST_CR_INLINE_COMMENT`. They tell Gitea exactly which line of which file to attach the comment to. Inline comments are submitted as part of a review — not as standalone requests.
