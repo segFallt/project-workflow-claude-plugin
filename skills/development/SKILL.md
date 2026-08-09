@@ -92,7 +92,7 @@ Read `../../shared/api-dispatch.md`.
    - Proto definitions (if contract changes — must be done first)
    - Helm/Compose changes (if infrastructure changes)
 3. **Consider cross-repo impacts** — if the change touches a shared-contract repo (see `PROJECT.md § Repository Dependency Order`), all downstream repos need corresponding updates
-4. **Draft a Design Document** (see Structured Output Templates below) — where `.claude/project-config/STANDARDS.md` is present, actively apply its principles (Universal Principles + the affected repo's section; consider every row, ignore `Severity`): reflect the applicable ones in the **Approach** and **Risks**, and carry them into Phase 3 as implementation requirements passed to the implementation sub-agents. Skip gracefully when `STANDARDS.md` is absent.
+4. **Draft a Design Document** (template: `./templates/design-document.md`) — where `.claude/project-config/STANDARDS.md` is present, actively apply its principles (Universal Principles + the affected repo's section; consider every row, ignore `Severity`): reflect the applicable ones in the **Approach** and **Risks**, and carry them into Phase 3 as implementation requirements passed to the implementation sub-agents. Skip gracefully when `STANDARDS.md` is absent.
 5. **Present the design to the user** and wait for approval before writing any code
 6. **Write initial state file** — after the user approves the design, write the state file using the atomic write pattern from `../../shared/state-tracking.md`:
    - Path: `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/{branch-slug}.json`
@@ -141,7 +141,7 @@ git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
    ```bash
    git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
    ```
-2. **Create the CR** via `CREATE_CR` using the CR Description template
+2. **Create the CR** via `CREATE_CR` using the CR Description template (`./templates/cr-description.md`)
 
    After CR creation, update the state file: set `cr.reference`, `cr.iid`, `cr.url`, `cr.project_id`, and `phase=5`.
 3. **Post a comment on the issue** linking to the CR:
@@ -183,7 +183,7 @@ At the start of each poll iteration: read the state file, reconcile the loop's p
    f. Commit and push the fix; resume polling from step 1
 3. **On pipeline still running:** Wait 60 seconds. Return to step 1. Do NOT exit.
 4. **On pipeline stuck (running > 20 minutes):** Handle per **Error Handling** ("CI stuck") — then wait for the user's guidance
-5. **On pipeline success:** Confirm to the user that the pipeline is green and that you are entering review feedback monitoring, then proceed to Phase 6 (Code Review Feedback Loop)
+5. **On pipeline success:** Confirm to the user that the pipeline is green and that you are entering review feedback monitoring, then proceed to Phase 6 (Code Review Feedback Loop). Report status using `./templates/pipeline-status.md`.
 
 ### Phase 6: Code Review Feedback Loop
 
@@ -213,7 +213,7 @@ At the start of each poll iteration: read the state file, reconcile the loop's p
 4. **If new actionable feedback is found:**
    a. Increment `review_round`. Write the state file with the updated `review_round`.
    b. **If `review_round` > `max_review_rounds`:** Pause and handle per **Error Handling** ("Max review rounds exceeded"). If the user says stop, proceed to Phase 7.
-   c. Present the **Review Feedback Report** (see Structured Output Templates) to the user and wait for approval before making any changes
+   c. Present the **Review Feedback Report** (template: `./templates/review-feedback-report.md`) to the user and wait for approval before making any changes
    d. Fetch CR changes via `GET_CR_DIFF` (paginate through all pages) to provide diff context to the sub-agent
    e. Read `./sub-agents/review-feedback.md` and dispatch via the Agent tool, passing all unresolved discussions, the diff, the worktree path, and the original Design Document
    f. After the sub-agent completes, run lint and tests locally in the worktree:
@@ -318,6 +318,16 @@ Each sub-agent is dispatched the same way: **read its prompt file and dispatch v
 | Review feedback | `./sub-agents/review-feedback.md` | Phase 6, step 4e | `changes_made`, `skipped`, `lint_result`, `test_result` |
 | Doc authoring | `../../shared/sub-agents/doc-authoring.md` | Requirements Documentation step | Registration entries for the authored/updated documents |
 
+### Output Templates
+
+| Artifact | File | Emitted at |
+|----------|------|------------|
+| Design Document | `./templates/design-document.md` | Phase 2 |
+| CR Description | `./templates/cr-description.md` | Phase 4 |
+| Pipeline Status Report | `./templates/pipeline-status.md` | Phase 5 |
+| Review Feedback Report | `./templates/review-feedback-report.md` | Phase 6 |
+| Error Handling matrix | `./references/error-handling.md` | on first failure |
+
 ---
 
 ## Requirements Documentation
@@ -325,140 +335,6 @@ Each sub-agent is dispatched the same way: **read its prompt file and dispatch v
 Do not decide which documents a change needs here — delegate that to the shared `doc-authoring` sub-agent (the single owner of documentation sizing and authoring). Read `../../shared/sub-agents/doc-authoring.md` and dispatch it via the Agent tool, passing the change description, the Phase 2 code-exploration output, the project's documentation profile and docs root (`PROJECT.md § Design Documentation`), and the target repo. It reads the escalation matrix in `shared/documentation-taxonomy.md`, drafts or updates the required documents from the templates, writes any Gherkin acceptance criteria, and returns their registration entries.
 
 Commit the authored/updated documents in the same branch as the implementation. Two related **code** artifacts remain the implementation's responsibility (they are not documents): update `.env.example` when you add an environment variable, and regenerate stubs when a proto contract changes.
-
----
-
-## Structured Output Templates
-
-### Design Document
-
-An **issue-scoped implementation planner** — not a persisted framework document. Frame it against the SDD/TSD tiers: when the change's significance warrants a persisted framework SDD or TSD, the `doc-authoring` sub-agent authors that document and this Design Document **links to it** rather than duplicating its content.
-
-Present this to the user for approval before writing any code:
-
-```markdown
-## Design: #{issue_id} — {issue_title}
-
-### Problem
-{1-2 sentence technical description of what needs to change and why}
-
-### Affected Components
-
-| Repo | Files to modify | Files to create |
-|------|----------------|----------------|
-| {repo_name} | {list} | {list or "none"} |
-| {repo_name} | {list} | {list or "none"} |
-
-### Approach
-{Clear description of the solution — include data flow, API contract changes, state changes, and any new abstractions. Reflect applicable `STANDARDS.md` principles (Universal + repo) in the described approach.}
-
-### Alternatives Considered
-{Brief note on any alternatives evaluated and why the chosen approach is preferred. Omit if no meaningful alternatives exist.}
-
-### Testing Strategy
-{What will be tested, at what level (unit / integration / E2E). Derive test cases from the issue's acceptance criteria — where these are Gherkin, map each `Scenario` (its `Given/When/Then`) to one or more test cases and cite the source scenario for traceability.}
-
-### Migration / Deployment Notes
-{Any migration steps, environment variable additions, or deployment order requirements. "None" if not applicable.}
-
-### Cross-Repo Dependencies
-{If multiple repos are involved, list them and the merge order per `PROJECT.md § Repository Dependency Order`. "None" if single-repo.}
-
-### Risks
-{Anything that could go wrong — breaking changes, data migrations, race conditions, rollback complexity. Note any applicable `STANDARDS.md` principle at risk (e.g., a change that could weaken error handling or test coverage). "None" if low-risk.}
-```
-
----
-
-### CR Description
-
-```markdown
-## Summary
-
-{1-2 sentence description of what this CR does}
-
-Closes #{issue_id}
-
-## Changes
-
-- {file or component}: {what changed and why}
-- {file or component}: {what changed and why}
-
-## Design Summary
-
-{2-3 sentence recap of the approach taken — link to design discussion in the issue if it exists}
-
-## Testing
-
-- [ ] Lint passes (`{repo-specific lint command}`)
-- [ ] Unit tests pass
-- [ ] Integration tests pass (if applicable)
-- [ ] Acceptance criteria from #{issue_id} met (one line per criterion; for Gherkin acceptance criteria, cite the `Scenario` each item verifies):
-  - [ ] {criterion 1 — or "Scenario: {name}"}
-  - [ ] {criterion 2 — or "Scenario: {name}"}
-
-## Screenshots
-
-{For frontend/UI repo changes: before/after screenshots or "N/A"}
-
-## Related
-
-- Issue: #{issue_id}
-- {Any related CRs in other repos, e.g., "Depends on <GROUP>/<upstream-repo> {cr_reference}"}
-```
-
----
-
-### Pipeline Status Report
-
-Output this when reporting CI results to the user:
-
-```markdown
-## Pipeline Status — {repo_name} CR {cr_reference}
-
-| Stage | Job | Status | Duration |
-|-------|-----|--------|----------|
-| {stage} | {job_name} | ✅ passed / ❌ failed / ⏳ running | {duration}s |
-| {stage} | {job_name} | ✅ passed / ❌ failed / ⏳ running | {duration}s |
-
-**Overall:** {success | failed | running}
-
-{If failed:}
-### Failure Details
-
-**Job:** {job_name}
-**Stage:** {stage_name}
-**Error:**
-\`\`\`
-{relevant excerpt from job log trace — last 30–50 lines}
-\`\`\`
-
-**Diagnosis:** {root cause in 1-2 sentences}
-**Proposed fix:** {what needs to change}
-```
-
----
-
-### Review Feedback Report
-
-Present this to the user when new review feedback is detected, before delegating fixes:
-
-```markdown
-## Review Feedback — {repo_name} CR {cr_reference} (Round {review_round} of {max_review_rounds})
-
-**Unresolved discussions:** {total_count}
-**New since last check:** {new_count}
-
-| # | File | Line | Reviewer | Comment (summary) |
-|---|------|------|----------|-------------------|
-| 1 | {position.new_path} | {position.new_line} | {author_name} | {first 100 chars of comment} |
-| 2 | {position.new_path} | {position.new_line} | {author_name} | {first 100 chars of comment} |
-
-### Proposed Approach
-{For each discussion, one sentence describing the intended fix. Flag any that seem unclear or potentially contentious.}
-
-**Shall I proceed with these fixes?**
-```
 
 ---
 
@@ -476,23 +352,4 @@ When a change touches multiple repos, implement and merge in the order defined i
 
 ## Error Handling
 
-| Scenario | Recovery |
-|----------|----------|
-| Issue not found (404) | Verify issue IID and repo name; check if issue is in a different repo |
-| Issue is closed | Confirm with user whether to reopen and implement, or create a new issue |
-| Branch already exists on remote | Check if prior work exists on the branch; if stale, ask user before deleting |
-| Worktree already exists locally | Reuse it (confirm branch matches) or run `git worktree prune` then recreate if stale |
-| Worktree path has leftover symlinks | Remove stale symlinks before recreating: `rm <WORKTREES_BASE>/{branch_name}/{repo_name}` |
-| Push fails (rejected) | Check if remote has diverged; fetch and rebase, or ask user before force-pushing |
-| CI fails — lint | Read lint output, fix violations, push fix commit |
-| CI fails — tests | Read test failure output, fix test or implementation, push fix commit |
-| CI stuck (> 20 min) | Report the stuck job (name and duration) to user; ask whether to cancel and re-trigger |
-| Cross-repo dependency not merged | Block downstream CR; notify user which upstream CR must merge first |
-| Lint/test fail locally | Do not create CR; fix first, then push |
-| Merge conflicts on branch | Rebase onto `main`; if conflicts are complex, ask user for guidance |
-| CR closed unexpectedly during feedback loop | Notify user; confirm whether to reopen or abort. Proceed to Phase 7 cleanup. |
-| CR has conflicts after review fix push | Notify user; offer to rebase onto `main`. If conflicts are complex, ask for guidance before proceeding. |
-| Review feedback sub-agent disagrees with reviewer | Surface the disagreement to the user with both perspectives. Add to `skipped` — do not auto-resolve. |
-| Discussion resolve API fails | Log the error and continue with remaining discussions. Report any unresolved threads to the user at the end of the round. |
-| Reviewer references code outside the CR diff | Flag to user — the reviewer may want broader changes outside the original issue scope. Ask whether to expand scope or reply explaining the constraint. |
-| Max review rounds exceeded | Present a summary (rounds completed, count of unresolved discussions, and links) and ask the user for direction: continue, take over manually, or stop. Proceed to Phase 7 if user stops. |
+See the error-handling matrix (Scenario → Recovery) in `./references/error-handling.md`, loaded on the first failure.
