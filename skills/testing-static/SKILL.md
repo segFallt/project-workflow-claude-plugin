@@ -139,26 +139,7 @@ Read `../../shared/api-dispatch.md`.
 
 ### Test Cycle Summary
 
-After completing Phases 1–2, output this table:
-
-```markdown
-## Test Cycle #{n} — Summary
-
-| ID | Check | Result | Notes |
-|----|-------|--------|-------|
-| I-1 | PostgreSQL connections | PASS | |
-| I-2 | Migrations applied | PASS | 12 tables |
-| ... | ... | ... | ... |
-| G-1 | Gateway health | FAIL | Connection refused on :8080 |
-| ... | ... | ... | ... |
-| U-1 | UI serving | PASS | |
-| ... | ... | ... | ... |
-| B-1 | Login page renders | PASS | |
-| B-2 | Login flow | PASS | Redirected to / |
-| ... | ... | ... | ... |
-
-**Totals:** {pass_count} PASS / {fail_count} FAIL / {skip_count} SKIP
-```
+After completing Phases 1–2, output the Test Cycle Summary table — see `../../shared/testing-templates.md`.
 
 ### Bug Report (for each FAIL)
 

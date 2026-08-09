@@ -115,8 +115,8 @@ rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
 5. **Fetch linked issues** — call `GET_CR_LINKED_ISSUES` for each CR. If any issues are returned, note their title, description, labels, and URL to pass to the sub-agent
 6. **Delegate to the Initial Review Sub-Agent** — read `./sub-agents/initial-review.md` and dispatch via the Agent tool, passing the diff, CR metadata, review standards, and any linked issue context
 7. **Post findings** based on sub-agent output:
-   a. Post the summary comment via `POST_CR_COMMENT` using the Summary Comment template
-   b. Post inline comments per the **Inline Comments** section below (canonical rule for which findings go inline, praise handling, and post-failure fallback)
+   a. Post the summary comment via `POST_CR_COMMENT` using the Summary Comment template (see `./templates/comment-formatting.md`)
+   b. Post inline comments per the **Inline Comments** section in `./templates/comment-formatting.md` (canonical rule for which findings go inline, praise handling, and post-failure fallback)
 8. **Approve or revoke** based on verdict:
    - If verdict is `approve` → call `APPROVE_CR`
    - If verdict is `request_changes` → call `UNAPPROVE_CR` to revoke any pre-existing approval; **add the CR to the monitoring list** for Phase 2 (record `project_id`, `cr_id`, `web_url`, `last_review_at` = timestamp of the review comment just posted, `review_round` = 1); write the updated tracking list to `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` using the atomic write pattern from `../../shared/state-tracking.md`
@@ -159,8 +159,8 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
    e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
    f. **Delegate to the Re-Review Sub-Agent** — read `./sub-agents/re-review.md` and dispatch via the Agent tool
    g. **Post updated findings and manage inline threads:**
-      - Post the summary comment via `POST_CR_COMMENT` (include round number, see Comment Formatting)
-      - Post inline comments per the **Inline Comments** section below
+      - Post the summary comment via `POST_CR_COMMENT` (include round number, see `./templates/comment-formatting.md`)
+      - Post inline comments per the **Inline Comments** section in `./templates/comment-formatting.md`
       - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author). Skip the resolve where the host lacks the endpoint (Gitea below 1.26 — see the capability-gating note below); never error
       - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api skill), post a new inline comment instead
    h. **Approve or revoke** based on new verdict:
@@ -213,78 +213,3 @@ The **Universal Principles** section applies to all repos. When dispatching sub-
 **Decision rule:** If any finding is `critical` or `warning` → `request_changes` (and revoke any existing approval). Otherwise → `approve`.
 
 > **Interaction with `STANDARDS.md` floors:** the severity vocabulary here (`critical`, `warning`, `suggestion`) is identical to the `Severity` column in `STANDARDS.md`. A finding mapped to a standards row takes that row's `Severity` as its **floor** (escalate-only, never silently downgraded — see **Standards** above); findings mapped to no row, and all findings when `STANDARDS.md` is absent, use this framework directly. Either way the decision rule above applies unchanged, since a floor only ever raises a severity.
-
----
-
-## Comment Formatting
-
-### Summary Comment (posted as a general comment)
-
-Use this template for the summary comment on every reviewed CR. For Phase 1 (initial review), omit the round number. For Phase 2 re-reviews, include the round.
-
-```markdown
-<!-- claude-review -->
-## Code Review{If review_round > 1: " (Round {review_round})"}
-
-**Verdict:** ✅ Approved / ❌ Changes Requested
-
-### Summary
-{sub-agent summary}
-
-### Findings
-
-#### 🚨 Critical
-{list critical findings, or "None"}
-
-#### ⚠️ Warnings
-{list warnings, or "None"}
-
-#### 💡 Suggestions
-{list suggestions, or "None"}
-
-#### 🌟 Praise
-{list praise items}
-
-### Checklist
-{Rendered dynamically from the sub-agent's `checklist` object — see the rules below the template. Do not hardcode rows.}
-
-```
-
-> The `<!-- claude-review -->` marker on the first line is **required** — it's used for deduplication.
-
-**Rendering the Checklist** (from the sub-agent's `checklist` object):
-
-- **Rolled-up AC line** — when `checklist.linked_issue_ac_addressed` is not `"no_linked_issue"`, emit exactly one line: `- [x] Linked-issue acceptance criteria addressed` if it is `true`, or `- [ ] Linked-issue acceptance criteria addressed` if `false`. Omit this line entirely when there is no linked issue (`"no_linked_issue"`).
-- **Per-category rows** — for each entry in `checklist.categories`, emit `- [x] {category}` when its `status` is `pass`, `- [ ] {category}` when `fail`, or `- [x] {category} (n/a)` when `not_applicable`. These categories are driven by `STANDARDS.md` (Universal Principles + the repo's section); when `STANDARDS.md` is absent the sub-agent supplies a minimal built-in set instead (`Security`, `Generated files`, `Tests`, `Error handling`, `Naming`).
-
-### Inline Comments
-
-For each `critical`, `warning`, or `suggestion` finding that has a non-null `file` and `line`, post an **inline comment** using the `POST_CR_INLINE_COMMENT` operation. Format:
-
-```
-**{severity emoji} {Severity}:** {message}
-```
-
-Severity emojis: 🚨 critical, ⚠️ warning, 💡 suggestion
-
-**Rules:**
-- Every finding with a determinable `file` and `line` MUST be posted as an inline comment — do not silently fall back to summary-only
-- `praise` findings remain in the summary comment only — do NOT post inline comments for praise
-- If an inline comment fails to post (e.g., invalid position), log the error and include the finding in the summary comment instead
-
-### Re-Review Inline Comment Resolution
-
-On re-review rounds (Phase 2), manage prior inline threads:
-- **Resolved issues:** If a prior `critical`/`warning`/`suggestion` inline thread is now addressed by the author, resolve the thread via `RESOLVE_CR_THREAD`
-- **Persisting issues:** Reply to the mapped prior thread via `REPLY_TO_CR_THREAD` (from the sub-agent's `threads_to_reply`) rather than opening a duplicate thread. Fallback to a new inline comment when the line has moved far enough that the finding no longer maps to a prior thread, or when the host has no threaded-reply endpoint (Gitea below 1.27 — see the gitea-api skill). Never error.
-- **New issues:** Post new inline comments as normal
-
-> **Capability gating:** reply needs GitLab/GitHub or Gitea ≥ 1.27; resolve needs GitLab/GitHub or Gitea ≥ 1.26. Below those versions, fall back (new inline comment / skip resolve) — never error.
-
-### Tone Guidelines
-
-- Direct but respectful — state what needs to change and why
-- No condescension, no hedging ("maybe consider possibly...")
-- Praise should be genuine, not filler
-- When requesting changes, explain what the fix should look like
-- Reference project conventions by name (e.g., "per the repository pattern described in PROJECT.md")
