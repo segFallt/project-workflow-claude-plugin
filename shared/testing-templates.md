@@ -33,3 +33,26 @@ Fix {check_id}: {one-line description}
 - Test cycle: #{n}
 - Check ID: {check_id}
 ```
+
+### Test Cycle Summary
+
+After completing Phases 1–2, output this table:
+
+```markdown
+## Test Cycle #{n} — Summary
+
+| ID | Check | Result | Notes |
+|----|-------|--------|-------|
+| I-1 | PostgreSQL connections | PASS | |
+| I-2 | Migrations applied | PASS | 12 tables |
+| ... | ... | ... | ... |
+| G-1 | Gateway health | FAIL | Connection refused on :8080 |
+| ... | ... | ... | ... |
+| U-1 | UI serving | PASS | |
+| ... | ... | ... | ... |
+| B-1 | Login page renders | PASS | |
+| B-2 | Login flow | PASS | Redirected to / |
+| ... | ... | ... | ... |
+
+**Totals:** {pass_count} PASS / {fail_count} FAIL / {skip_count} SKIP
+```

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-08-09
+
+### Changed
+
+- `.ci/smoke-test.sh` now resolves `./templates/`, `./references/`, and `../../shared/` pointers in `SKILL.md` files — not only `./sub-agents/` — and fails CI on any dangling relocation link (targets must exist and be non-empty), closing the pointer-validation gap ahead of the progressive-disclosure retrofits (#53).
+- Retrofitted the `init` skill for progressive disclosure: `skills/init/SKILL.md` slimmed from 848 to ~344 lines by relocating on-demand detail behind pointers — the emittable PROJECT.md skeleton to `skills/init/templates/PROJECT.md` (reshaped from the former unread reference; generated PROJECT.md is byte-identical), plus `skills/init/references/{section-templates,claude-md-block,update-mode,file-generation-rules,project-md-reference}.md`. No behavioural change to init or the files it generates (#50).
+- Retrofitted the `development` skill for progressive disclosure: `skills/development/SKILL.md` slimmed from 498 to ~355 lines by relocating its four output templates to `skills/development/templates/{design-document,cr-description,pipeline-status,review-feedback-report}.md` (loaded at the emitting phase) and the Error Handling matrix to `skills/development/references/error-handling.md`, with an `Output Templates` index alongside the Sub-Agent Reference. No behavioural change (#51).
+- Retrofitted the moderate coordinators for progressive disclosure: `code-review` Comment Formatting → `skills/code-review/templates/comment-formatting.md` (Severity & Decision Framework kept inline); `testing-spec` Phase 0 Steps 0b–0c spec-extraction procedure → `skills/testing-spec/references/spec-generation.md`; `testing-static` Test Cycle Summary → `shared/testing-templates.md` (co-located with the other testing output templates). No behavioural change (#52).
+
 ## [1.7.0] - 2026-08-08
 
 ### Added
