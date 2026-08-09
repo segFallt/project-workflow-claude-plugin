@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- `.ci/smoke-test.sh` now resolves `./templates/`, `./references/`, and `../../shared/` pointers in `SKILL.md` files — not only `./sub-agents/` — and fails CI on any dangling relocation link (targets must exist and be non-empty), closing the pointer-validation gap ahead of the progressive-disclosure retrofits (#53).
+
 ## [1.7.0] - 2026-08-08
 
 ### Added

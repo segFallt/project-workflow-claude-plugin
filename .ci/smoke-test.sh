@@ -5,7 +5,8 @@
 #   1. Each skills/<name>/SKILL.md exists and is non-empty.
 #   2. Each skills/<name>/sub-agents/*.md is non-empty.
 #   3. Each shared/sub-agents/*.md is non-empty.
-#   4. Cross-references in SKILL.md files (./sub-agents/<file>.md) resolve.
+#   4. On-demand pointers in SKILL.md files (./sub-agents/, ./templates/,
+#      ./references/, ../../shared/) resolve to existing, non-empty files.
 #
 # Exits 1 if any check fails, 0 if all pass.
 
@@ -82,7 +83,17 @@ for agent_file in "$REPO_ROOT/shared/sub-agents"/*.md; do
   fi
 done
 
-# ── 4. Cross-references in SKILL.md files resolve ────────────────────────────
+# ── 4. On-demand pointers in SKILL.md files resolve ──────────────────────────
+#
+# Progressive-disclosure skills defer detail to Layer-3 files loaded on demand.
+# Resolve the pointer forms the skills use so a dangling relocation link fails
+# CI:
+#   ./sub-agents/<...>.md   ./templates/<...>.md   ./references/<...>.md
+#     — resolved relative to the skill's own directory
+#   ../../shared/<...>.md   — cross-skill modules at the repo root (this also
+#     non-empty-checks shared/sub-agents/ pointers, in addition to check 3)
+# Each target must exist and be non-empty. Cross-skill ../<skill>/SKILL.md
+# redirects are intentionally out of scope (not Layer-3 relocation pointers).
 
 for skill_md in "$REPO_ROOT/skills"/*/SKILL.md; do
   [ -f "$skill_md" ] || continue
@@ -90,21 +101,22 @@ for skill_md in "$REPO_ROOT/skills"/*/SKILL.md; do
   skill_dir=$(dirname "$skill_md")
   skill_name=$(basename "$skill_dir")
 
-  # Extract all ./sub-agents/<name>.md references.
-  # Note: this check only resolves references local to the skill directory
-  # (i.e. ./sub-agents/ paths). References to shared sub-agents
-  # (shared/sub-agents/) are covered by check 3 above, not this one.
-  refs=$(grep -oE '\./sub-agents/[a-zA-Z0-9_-]+\.md' "$skill_md" || true)
+  # Match the four relocation-pointer forms; dedupe so a file referenced
+  # several times is only reported once. Paths use no spaces, so word-splitting
+  # the result in the loop below is safe.
+  refs=$(grep -oE '(\.\./\.\./shared/[A-Za-z0-9_/.-]+\.md|\./(sub-agents|templates|references)/[A-Za-z0-9_/.-]+\.md)' "$skill_md" | sort -u || true)
 
   for ref in $refs; do
-    # Strip leading ./
-    filename=$(echo "$ref" | sed 's|^\./||')
-    target="$skill_dir/$filename"
+    # Resolve relative to the SKILL.md's directory; the filesystem collapses
+    # the ../.. segments during the -f/-s lookup.
+    target="$skill_dir/$ref"
 
-    if [ -f "$target" ]; then
-      pass "skills/$skill_name/$filename referenced in SKILL.md exists"
+    if [ -f "$target" ] && [ -s "$target" ]; then
+      pass "skills/$skill_name/SKILL.md -> $ref resolves"
+    elif [ ! -f "$target" ]; then
+      fail "skills/$skill_name/SKILL.md -> $ref does not exist"
     else
-      fail "skills/$skill_name/$filename referenced in SKILL.md does not exist"
+      fail "skills/$skill_name/SKILL.md -> $ref is empty"
     fi
   done
 done
