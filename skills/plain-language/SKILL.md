@@ -1,7 +1,6 @@
 ---
 name: plain-language
 description: Use when generating user-facing prose to suppress language and formatting patterns that signal LLM-generated text.
-disable-model-invocation: true
 ---
 
 # Plain Language

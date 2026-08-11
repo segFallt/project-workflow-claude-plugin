@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-08-11
+
+### Changed
+
+- The `plain-language` skill is now model-invocable: removed `disable-model-invocation: true` from `skills/plain-language/SKILL.md` so the model applies the guidance when generating user-facing prose (issue descriptions, MR bodies, docs). It was the only skill in the plugin carrying the flag. The skill stays a passive reference and remains directly user-invocable (#56).
+
 ## [1.8.0] - 2026-08-09
 
 ### Changed
