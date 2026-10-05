@@ -1,0 +1,11 @@
+{
+  "id": "gitlab-api-lookup",
+  "description": "read-only reference lookup through the gitlab-api skill",
+  "writes": false,
+  "cwd": "temp",
+  "prompt": "/project-workflows:gitlab-api What is the exact curl command for the CREATE_ISSUE operation? Reply with only the command.",
+  "followUps": [],
+  "askAnswers": [],
+  "endWhen": { "maxTurns": 1 },
+  "maxBudgetUsd": 1
+}

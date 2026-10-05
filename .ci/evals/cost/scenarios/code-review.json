@@ -1,0 +1,25 @@
+{
+  "id": "code-review",
+  "description": "code-review phase-1 review of exactly one sandbox MR (no monitoring loop)",
+  "writes": true,
+  "cwd": "sandbox",
+  "prompt": "/project-workflows:code-review Phase 1 only, scoped to a single change request: review only code-agent-workspace/agent-sandbox!{{DEV_MR_IID}}. Do not read, review, comment on, approve, or otherwise touch merge requests in any other project, even if the group listing shows them. Post the review on that one MR, then stop. Do not enter the monitoring loop.",
+  "followUps": [
+    {
+      "match": "[\\s\\S]*",
+      "reply": "Phase 1 only, sandbox MR !{{DEV_MR_IID}} only: stop after posting that review; do not enter the monitoring loop.",
+      "repeat": true
+    }
+  ],
+  "askAnswers": [
+    {
+      "question": ".*",
+      "answer": "$first"
+    }
+  ],
+  "endWhen": {
+    "assistantMatches": "(?i)review (posted|complete)|verdict",
+    "maxTurns": 6
+  },
+  "maxBudgetUsd": 10
+}

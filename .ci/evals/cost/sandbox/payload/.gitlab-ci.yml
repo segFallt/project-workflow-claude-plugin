@@ -1,0 +1,4 @@
+test:
+  image: alpine:3.20
+  script:
+    - sh -n src/calc.sh && sh test.sh

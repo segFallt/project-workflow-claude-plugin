@@ -1,0 +1,32 @@
+{
+  "id": "work-item-create",
+  "description": "work-item create mode: file a new small feature issue in the sandbox (CREATE_OP must be unique per run, or the duplicate check short-circuits the run)",
+  "writes": true,
+  "cwd": "sandbox",
+  "prompt": "/project-workflows:work-item [cost-eval] Add a {{CREATE_OP}} function to src/calc.sh",
+  "followUps": [
+    {
+      "match": "(?i)question|clarif|confirm|\\?",
+      "reply": "Type: feature. Scope: src/calc.sh only, plus a test in test.sh. No milestone. Proceed with your recommendations.",
+      "repeat": true
+    }
+  ],
+  "askAnswers": [
+    {
+      "question": ".*",
+      "answer": "$first"
+    }
+  ],
+  "endWhen": {
+    "assistantMatches": "(?i)\\bcreated\\b[\\s\\S]{0,300}/-/(?:issues|work_items)/(\\d+)",
+    "maxTurns": 8
+  },
+  "capture": [
+    {
+      "var": "CREATED_ISSUE_IID",
+      "pattern": "(?i)\\bcreated\\b[\\s\\S]{0,300}/-/(?:issues|work_items)/(\\d+)",
+      "required": true
+    }
+  ],
+  "maxBudgetUsd": 5
+}

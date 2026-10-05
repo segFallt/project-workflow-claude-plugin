@@ -1,0 +1,12 @@
+{
+  "id": "listing-probe",
+  "description": "minimal single-turn call measuring the always-loaded context (skill listing) size",
+  "writes": false,
+  "cwd": "temp",
+  "prompt": "Reply with exactly: OK",
+  "followUps": [],
+  "askAnswers": [],
+  "endWhen": { "maxTurns": 1 },
+  "maxBudgetUsd": 0.5,
+  "model": "haiku"
+}
