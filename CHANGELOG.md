@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-10-08
+
+Cost controls for skill execution (#67). Sub-agents run on a model tier chosen per role, waiting on CI and review activity no longer spends a model turn per poll, and coordinators read only the host-API sections they need.
+
+**Upgrading:** the config-structure version (`pw-version`) is now `1.6.0`. Run `/project-workflows:init` in update mode to migrate existing `.claude/project-config/` files; it adds the optional `## Agent Model Tiering` section to `PROJECT.md` as a not-configured stub. The poll script needs `python3` (standard library only). For unattended CI and review waits, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings, because a skill's own pre-approval lasts only for the turn that invokes it.
+
+### Added
+
+- Optional `PROJECT.md § Agent Model Tiering` section for per-project overrides of sub-agent model tiers, with the plugin defaults in `shared/model-tiering.md`. `init` asks about it in Step 6 (#69).
+- Sub-agent dispatches pass a model resolved per `shared/model-tiering.md`. Read-heavy sub-agents (code-exploration, doc-authoring, test-writing) default to `sonnet`; code-writing and review keep the session model. Plugin defaults never go above the session model. `PROJECT.md § Agent Model Tiering` overrides are used as written, and `CLAUDE_CODE_SUBAGENT_MODEL`, when set, takes precedence over the defaults. The coordinator never picks a model ad hoc (#70).
+- Bundled `scripts/poll-until-change.py`. CI and review waits in `development`, `code-review` and the testing skills now run in model-free foreground chunks (at most one model turn per 540 s chunk) and wake only when the pipeline or review activity changes (#73).
+- `python3` prerequisite and a documented `permissions.allow` rule for unattended poll loops (#73).
+- `LIST_ISSUE_COMMENTS` operation in the GitLab, GitHub and Gitea API references (#71).
+- Smoke-test checks that the host-API section and operation anchors used by `shared/api-dispatch.md` exist, and that bundled Python scripts compile and pass their unit tests (#71, #73).
+- Cost-controls PRD (`docs/product/cost-controls.md`) and SDD (`docs/design/cost-controls.md`) (#74).
+- Cost-eval runner under `.ci/evals/cost` (not shipped; #68), with `api-dispatch` lookup, default-tier exploration, merge-probe and explicit-merge scenarios (blocked on post-#73 plugins, see #79), a per-sub-agent model column, `--ci-delay` and `--strict-mcp-config` (#70, #71, #73, #75, #76).
+
+### Changed
+
+- Coordinators read only the host-API sections they need through `shared/api-dispatch.md` (by path, with a fence-aware extractor) instead of loading the whole host-API skill. The host-API skills stay directly invocable (#71).
+- Config-structure version (`pw-version`) is now `1.6.0`; `init` update mode migrates older configs in one pass (#69).
+- Pushes define `PUSH_URL` in the same command as `git push` (#73).
+
+### Fixed
+
+- `development` no longer offers to merge its change request or treats a generic go-ahead as consent. It reports the CR as ready for a maintainer, and merges only on an explicit user instruction, at the head SHA it reported (#76). While it waits for review activity, such an instruction is seen when the current wait chunk returns, up to about 540 s later (#79).
+- `init` Step 6 no longer passes more than four options to one `AskUserQuestion` question (#69).
+- The `code-review` `/loop` example uses the namespaced skill name (#73).
+
 ## [1.8.1] - 2026-08-11
 
 ### Changed
