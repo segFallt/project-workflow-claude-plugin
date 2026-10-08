@@ -138,6 +138,23 @@ describe("driver failures", () => {
     expect(state.reason).toContain("error_max_budget_usd");
   });
 
+  test("afterFollowUp ends after the turn answering that reply", () => {
+    const sc = scenario({
+      followUps: [{ match: "ready", reply: "Proceed." }, { match: "[\\s\\S]*", reply: "Continue.", repeat: true }],
+      endWhen: { afterFollowUp: 0 },
+    });
+    const { state, actions } = drive(
+      [init, assistant("working"), result(0.01), assistant("ready to merge"), result(0.02), assistant("anything"), result(0.03)],
+      sc,
+    );
+    expect(state.status).toBe("ok");
+    expect(actions.map((a) => (a.kind === "send" ? (a.message as any).message.content : a.kind))).toEqual([
+      "Continue.",
+      "Proceed.",
+      "close",
+    ]);
+  });
+
   test("maxTurns ends successfully", () => {
     const { state, actions } = drive([init, assistant("anything"), result(0.01)], scenario({ endWhen: { maxTurns: 1 } }));
     expect(state.status).toBe("ok");

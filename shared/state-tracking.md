@@ -69,7 +69,8 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
     "reference": "!123",
     "iid": 123,
     "url": "https://gitlab.example.com/group/repo/-/merge_requests/123",
-    "project_id": "group/repo"
+    "project_id": "group/repo",
+    "reported_head_sha": "a4c02bd9f1e7c3b2d6a8e0f4c5b7d9e1f3a2c4b6"
   },
   "phase": 6,
   "loop": {
@@ -95,6 +96,7 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
 
 **Field notes:**
 - `cr` is `null` until the CR is created (Phase 4)
+- `cr.reported_head_sha` (optional; absent until the first readiness report) is the CR head SHA stated in the latest Phase 6 readiness report; an explicit merge proceeds only while the CR head still equals it
 - `worktrees` is a map keyed by repo name — supports multi-repo changes
 - `loop.last_poll_at` is updated on every write; doubles as a liveness heartbeat
 - `design_document_md` stores the full approved design doc text (set at end of Phase 2)

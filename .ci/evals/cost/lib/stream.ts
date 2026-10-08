@@ -48,6 +48,8 @@ export interface DriverState {
   /** Every assistant text block of the run, in order. */
   allText: string[];
   usedFollowUps: Set<number>;
+  /** Turn after which the run ends successfully (set when endWhen.afterFollowUp is sent). */
+  endAfterTurn?: number;
   results: ResultInfo[];
   toolCounts: Record<string, number>;
   sessionId?: string;
@@ -198,7 +200,8 @@ function onResult(state: DriverState, event: any, ctx: DriverContext): Action[] 
   if (state.status !== "running") return [{ kind: "close" }];
 
   const lastText = state.lastText;
-  if (endConditionMet(ctx.scenario.endWhen, lastText, state.turns)) {
+  const afterReply = state.endAfterTurn !== undefined && state.turns >= state.endAfterTurn;
+  if (afterReply || endConditionMet(ctx.scenario.endWhen, lastText, state.turns)) {
     state.status = "ok";
     return [{ kind: "close" }];
   }
@@ -208,6 +211,7 @@ function onResult(state: DriverState, event: any, ctx: DriverContext): Action[] 
     return [{ kind: "close" }];
   }
   state.usedFollowUps.add(idx);
+  if (idx === ctx.scenario.endWhen.afterFollowUp) state.endAfterTurn = state.turns + 1;
   state.lastText = "";
   return [{ kind: "send", message: userMessage(ctx.scenario.followUps[idx].reply) }];
 }

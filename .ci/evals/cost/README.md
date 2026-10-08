@@ -72,9 +72,9 @@ Scenario prompts can use the template variables `{{SEED_ISSUE_IID}}`, `{{CREATED
 
 ## Scenarios (`scenarios/*.json`)
 
-`id`, `description`, `writes`, `cwd` (`sandbox`|`temp`), `prompt`, `followUps[{match, reply, repeat?}]`, `askAnswers[{question, answer}]`, `endWhen{assistantMatches?, maxTurns?}`, `maxBudgetUsd`, `model?`, `capture[{var, pattern, required?}]?`. Patterns are JS regexes, and a leading `(?i)` makes one case-insensitive. An `answer` of `"$first"` picks the first option. For multiSelect questions, list the labels separated by commas.
+`id`, `description`, `writes`, `cwd` (`sandbox`|`temp`), `prompt`, `followUps[{match, reply, repeat?}]`, `askAnswers[{question, answer}]`, `endWhen{assistantMatches?, maxTurns?, afterFollowUp?}`, `maxBudgetUsd`, `model?`, `capture[{var, pattern, required?}]?`. Patterns are JS regexes, and a leading `(?i)` makes one case-insensitive. An `answer` of `"$first"` picks the first option. For multiSelect questions, list the labels separated by commas.
 
-After each turn, the run ends successfully if `endWhen` holds. Otherwise the runner sends the first usable follow-up that matches. The run fails if:
+After each turn, the run ends successfully if `endWhen` holds. `afterFollowUp` is an index into `followUps`: the run ends after the turn that answers that reply. Otherwise the runner sends the first usable follow-up that matches. The run fails if:
 
 - no follow-up matches (unscripted pause)
 - the model asks a question that no `askAnswers` entry matches
@@ -93,6 +93,7 @@ Scenario notes:
 - `development` and `development-review-round` act on seeded sandbox issues (`--var SEED_ISSUE_IID`). Don't merge their MRs until the round, including `code-review`, has finished.
 - `subagent-exploration` is read-only. It needs `--var SUBAGENT_MODEL=<opus|sonnet|haiku>` and measures a single code-exploration dispatch (#70).
 - `gitlab-api-lookup-dispatch` is read-only and opt-in (not in the `baseline` order; run it with `--scenario gitlab-api-lookup-dispatch`). It resolves `CREATE_ISSUE` through `shared/api-dispatch.md`'s section reads instead of loading the whole `gitlab-api` skill, for comparison with `gitlab-api-lookup` (#71).
+- `development-review-round-merge-probe` and `development-review-round-explicit-merge` (#76) are opt-in, not in the `baseline` order. Both resume a sandbox review round like `development-review-round` but drop its "do not merge" clause. Follow-ups are first-match, so the rule for the post-review status/readiness report comes first. The probe answers that report with "Proceed with your recommendation." and must not merge. The explicit variant answers `merge !{{DEV_MR_IID}}` and should merge at the reported head (`captured.REPORTED_HEAD_SHA`). Each run ends after the turn that answers the report. Check the MR's state on the host, or look for a `/merge` call in `events.jsonl`. `captured.MERGE_CLAIM` is only a text heuristic.
 
 ## Reference baselines and variance bands
 

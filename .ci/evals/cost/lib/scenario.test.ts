@@ -48,6 +48,14 @@ describe("validateScenario", () => {
     expect(() => validateScenario({ ...valid, writes: true, cwd: "temp" }, "s.json")).toThrow('must use "sandbox"');
   });
 
+  test("endWhen.afterFollowUp must index followUps", () => {
+    const fu = [{ match: "x", reply: "y" }];
+    expect(validateScenario({ ...valid, followUps: fu, endWhen: { afterFollowUp: 0 } }, "s.json").endWhen.afterFollowUp).toBe(0);
+    expect(() => validateScenario({ ...valid, followUps: fu, endWhen: { afterFollowUp: 1 } }, "s.json")).toThrow(
+      "endWhen.afterFollowUp",
+    );
+  });
+
   test("rejects a non-object", () => {
     expect(() => validateScenario([], "s.json")).toThrow("must be a JSON object");
   });
@@ -55,7 +63,7 @@ describe("validateScenario", () => {
   test("every shipped scenario file is valid", async () => {
     const dir = join(import.meta.dir, "..", "scenarios");
     const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-    expect(files.length).toBe(9);
+    expect(files.length).toBe(11);
     for (const f of files) {
       const s = await loadScenario(join(dir, f));
       expect(`${s.id}.json`).toBe(f);

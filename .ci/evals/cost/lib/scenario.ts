@@ -22,6 +22,8 @@ export interface AskAnswer {
 export interface EndWhen {
   assistantMatches?: string;
   maxTurns?: number;
+  /** Index into followUps: end successfully after the turn that answers that reply. */
+  afterFollowUp?: number;
 }
 
 export interface Capture {
@@ -124,8 +126,8 @@ export function validateScenario(raw: unknown, source: string): Scenario {
   if (!end || typeof end !== "object") {
     errors.push("endWhen: required object");
   } else {
-    if (end.assistantMatches === undefined && end.maxTurns === undefined) {
-      errors.push("endWhen: needs assistantMatches and/or maxTurns");
+    if (end.assistantMatches === undefined && end.maxTurns === undefined && end.afterFollowUp === undefined) {
+      errors.push("endWhen: needs assistantMatches, maxTurns and/or afterFollowUp");
     }
     if (end.assistantMatches !== undefined) {
       if (!isNonEmptyString(end.assistantMatches)) errors.push("endWhen.assistantMatches: must be a string");
@@ -133,6 +135,12 @@ export function validateScenario(raw: unknown, source: string): Scenario {
     }
     if (end.maxTurns !== undefined && !(Number.isInteger(end.maxTurns) && (end.maxTurns as number) > 0)) {
       errors.push("endWhen.maxTurns: must be a positive integer");
+    }
+    if (end.afterFollowUp !== undefined) {
+      const n = Array.isArray(s.followUps) ? s.followUps.length : 0;
+      if (!(Number.isInteger(end.afterFollowUp) && (end.afterFollowUp as number) >= 0 && (end.afterFollowUp as number) < n)) {
+        errors.push("endWhen.afterFollowUp: must be an index into followUps");
+      }
     }
   }
 
