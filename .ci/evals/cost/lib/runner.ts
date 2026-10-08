@@ -9,7 +9,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { assertUserSettingsSafe, buildClaudeArgs, runClaude } from "./claude";
 import { assertSandbox } from "./guard";
-import { applyCaptures, renderScenario, type Scenario } from "./scenario";
+import { applyCaptures, renderScenario, templateVars, type Scenario } from "./scenario";
 import { turnCostDeltas, type ResultInfo } from "./stream";
 import {
   copyTranscripts,
@@ -131,11 +131,11 @@ export async function runScenario(opts: RunOptions): Promise<RunSummary> {
 
   let tempCwd: string | undefined;
   try {
-    const scenario = renderScenario(s, opts.vars);
+    const pluginRoot = await realpath(opts.pluginRoot);
+    const scenario = renderScenario(s, templateVars(opts.vars, pluginRoot));
     const { cwd, temp } = await resolveCwd(scenario, opts.sandboxDir);
     if (temp) tempCwd = cwd;
     summary.cwd = cwd;
-    const pluginRoot = await realpath(opts.pluginRoot);
     const host = await runClaude({
       args: buildClaudeArgs({
         pluginRoot,

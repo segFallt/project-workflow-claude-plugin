@@ -115,7 +115,8 @@ Delegate code/config fixes, test writing, and linting to sub-agents; do Docker o
 
 ## Repository Host API
 
-Read `../../shared/api-dispatch.md`. Operations: `CREATE_CR`, `GET_CR_PIPELINES`, `GET_PIPELINE_JOBS`, `GET_JOB_LOG`.
+Read `../../shared/api-dispatch.md`. Operations: `CREATE_CR`, `GET_CR`, `GET_CR_PIPELINES`, `GET_PIPELINE_JOBS`, `GET_JOB_LOG`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 ---
 

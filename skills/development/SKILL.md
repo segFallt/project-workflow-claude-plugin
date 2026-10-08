@@ -11,7 +11,7 @@ You are an **architect and developer** for the project described in `.claude/pro
 
 You are a **coordinator**. You delegate code writing and test authoring to sub-agents. You handle issue parsing, architecture decisions, repository host API calls, branch management, CI monitoring, and all user interaction directly.
 
-**Success criteria:** the user confirms your understanding of the issue; the user approves the solution design before any code is written; implementation follows `PROJECT.md` conventions; repo-specific lint and tests pass before the CR is created; the CR description includes `Closes #{issue_id}` (`{issue_id}` = `iid` on GitLab, `number` on GitHub/Gitea — see your repo-host skill's Field Reference); CI passes with failures diagnosed and fixed; the issue's acceptance criteria are met and documented in the CR; review feedback is addressed iteratively until the CR is approved and merged.
+**Success criteria:** the user confirms your understanding of the issue; the user approves the solution design before any code is written; implementation follows `PROJECT.md` conventions; repo-specific lint and tests pass before the CR is created; the CR description includes `Closes #{issue_id}` (`{issue_id}` = `iid` on GitLab, `number` on GitHub/Gitea — see the host-API `§ Field Reference`, read per `shared/api-dispatch.md`); CI passes with failures diagnosed and fixed; the issue's acceptance criteria are met and documented in the CR; review feedback is addressed iteratively until the CR is approved and merged.
 
 ---
 
@@ -33,11 +33,14 @@ Read `../../shared/environment-setup.md`, `../../shared/trunk-branch.md`, and `.
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `GET_ISSUE` — get issue details
+- `LIST_ISSUE_COMMENTS` — list an issue's comments (prior discussion and decisions)
 - `POST_ISSUE_COMMENT` — post a comment on an issue (e.g., "implementation underway in {cr_reference}")
 - `SEARCH_BRANCHES` — search/list branches to find existing branches for an issue
+- `LIST_OPEN_CRS` — list open change requests (to find an existing CR for a branch on resume)
 - `CREATE_CR` — create a new change request
 - `GET_CR_PIPELINES` — get CI pipeline/check status for a CR
 - `GET_PIPELINE_JOBS` — list jobs in a pipeline
@@ -59,7 +62,7 @@ Read `../../shared/api-dispatch.md`.
    - A full URL: `{host_url}/{group}/{repo}/issues/{iid}`
    - A short reference: `<repo-name>#42` or just `#42` with the repo implicit from context
 2. **Fetch the issue** via `GET_ISSUE`
-3. **Fetch issue comments** to capture any prior discussion or decisions
+3. **Fetch issue comments** via `LIST_ISSUE_COMMENTS` to capture any prior discussion or decisions
 4. **Scan for existing state file** — after fetching the issue, read `../../shared/state-tracking.md` for the full state pattern, then:
    - Scan all files in `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/` (if the directory exists)
    - For each `.json` file found, read it via Python 3 and check if `issue.id` matches the current issue's ID
@@ -133,7 +136,7 @@ git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
 ### Phase 4: Change Request Creation
 
 **On resume with `phase=4`:** Check if a CR already exists for the branch:
-- Call `GET_CR` / list open CRs filtered by branch name
+- List open CRs via `LIST_OPEN_CRS` and match the CR whose source branch is the issue branch
 - If a CR exists: populate `cr.*` fields in the state file, set `phase=5`, and jump to Phase 5
 - If no CR exists: proceed with CR creation below
 
@@ -202,7 +205,7 @@ At the start of each poll iteration: read the state file, reconcile the loop's p
    b. **If `state` is `merged`:** Notify the user. Proceed to Phase 7.
    c. **If `state` is `closed`:** Notify the user that the CR was closed unexpectedly. Proceed to Phase 7.
    d. **If conflicts detected:** Handle per **Error Handling** ("CR has conflicts after review fix push"); wait for guidance before continuing.
-   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Do not stop at the first page. Incomplete discussion data will cause review threads to be silently missed.
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the host-API `§ Pagination`, read per `shared/api-dispatch.md`). Do not stop at the first page. Incomplete discussion data will cause review threads to be silently missed.
    f. **Identify new actionable feedback** — filter discussions where:
       - At least one note in the thread was created or updated after `last_checked_at`, OR no bot reply exists on the thread yet
       - Author is not the bot/agent (exclude notes you have posted yourself)

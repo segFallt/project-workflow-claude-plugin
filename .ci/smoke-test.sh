@@ -7,6 +7,9 @@
 #   3. Each shared/sub-agents/*.md is non-empty.
 #   4. On-demand pointers in SKILL.md files (./sub-agents/, ./templates/,
 #      ./references/, ../../shared/) resolve to existing, non-empty files.
+#   5. skills/init/templates/STANDARDS.md has its required heading and columns.
+#   6. Each host-API skill (gitlab/github/gitea) has the section and operation
+#      anchors shared/api-dispatch.md extracts.
 #
 # Exits 1 if any check fails, 0 if all pass.
 
@@ -140,6 +143,56 @@ elif ! grep -q '^| Category | What to check | Severity |' "$standards_tmpl"; the
 else
   pass "skills/init/templates/STANDARDS.md has required headings and columns"
 fi
+
+# ── 6. Host-API skills carry the anchors shared/api-dispatch.md extracts ─────
+#
+# shared/api-dispatch.md reads host-API sections by heading with awk instead of
+# loading the whole skill, so a renamed or missing heading would silently drop
+# a recipe. Each host skill must contain every top-level section the read set
+# names and exactly one `### N. NAME` heading per operation (N is ignored).
+
+API_SECTIONS='Authentication|Project/Repo Identification|Pagination|Inline Comment Position Object|Field Reference'
+API_OPERATIONS='LIST_OPEN_CRS GET_CR GET_CR_DIFF CREATE_CR APPROVE_CR UNAPPROVE_CR
+MERGE_CR POST_CR_COMMENT POST_CR_INLINE_COMMENT RESOLVE_CR_THREAD GET_CR_COMMENTS
+GET_CR_LINKED_ISSUES GET_CR_PIPELINES GET_PIPELINE_JOBS GET_JOB_LOG GET_ISSUE
+CREATE_ISSUE CLOSE_ISSUE LIST_LABELS LIST_GROUP_LABELS LIST_MILESTONES
+SEARCH_BRANCHES POST_ISSUE_COMMENT REPLY_TO_CR_THREAD GET_CR_DISCUSSIONS
+SEARCH_ISSUES UPDATE_ISSUE LIST_ISSUES LIST_ISSUE_COMMENTS'
+
+for host in gitlab github gitea; do
+  api_md="$REPO_ROOT/skills/$host-api/SKILL.md"
+  rel="skills/$host-api/SKILL.md"
+
+  if [ ! -f "$api_md" ]; then
+    fail "$rel does not exist (required by shared/api-dispatch.md)"
+    continue
+  fi
+
+  host_ok=1
+
+  # Section names contain spaces, so split on '|' rather than whitespace.
+  old_ifs=$IFS
+  IFS='|'
+  for section in $API_SECTIONS; do
+    if ! grep -qxF "## $section" "$api_md"; then
+      fail "$rel ($host) missing section '## $section'"
+      host_ok=0
+    fi
+  done
+  IFS=$old_ifs
+
+  for op in $API_OPERATIONS; do
+    count=$(grep -cE "^### [0-9]+\. $op[[:space:]]*\$" "$api_md" || true)
+    if [ "$count" -ne 1 ]; then
+      fail "$rel ($host) has $count '### N. $op' headings (expected exactly 1)"
+      host_ok=0
+    fi
+  done
+
+  if [ "$host_ok" -eq 1 ]; then
+    pass "$rel has all api-dispatch section and operation anchors"
+  fi
+done
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 

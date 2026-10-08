@@ -46,6 +46,7 @@ Read `../../shared/environment-setup.md`.
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `LIST_LABELS` — list project/repo labels (to pick from existing labels)

@@ -58,7 +58,7 @@ Severity emojis: 🚨 critical, ⚠️ warning, 💡 suggestion
 
 On re-review rounds (Phase 2), manage prior inline threads:
 - **Resolved issues:** If a prior `critical`/`warning`/`suggestion` inline thread is now addressed by the author, resolve the thread via `RESOLVE_CR_THREAD`
-- **Persisting issues:** Reply to the mapped prior thread via `REPLY_TO_CR_THREAD` (from the sub-agent's `threads_to_reply`) rather than opening a duplicate thread. Fallback to a new inline comment when the line has moved far enough that the finding no longer maps to a prior thread, or when the host has no threaded-reply endpoint (Gitea below 1.27 — see the gitea-api skill). Never error.
+- **Persisting issues:** Reply to the mapped prior thread via `REPLY_TO_CR_THREAD` (from the sub-agent's `threads_to_reply`) rather than opening a duplicate thread. Fallback to a new inline comment when the line has moved far enough that the finding no longer maps to a prior thread, or when the host has no threaded-reply endpoint (Gitea below 1.27 — see the gitea-api SKILL.md `§ REPLY_TO_CR_THREAD`). Never error.
 - **New issues:** Post new inline comments as normal
 
 > **Capability gating:** reply needs GitLab/GitHub or Gitea ≥ 1.27; resolve needs GitLab/GitHub or Gitea ≥ 1.26. Below those versions, fall back (new inline comment / skip resolve) — never error.

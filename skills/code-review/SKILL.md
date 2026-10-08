@@ -61,8 +61,9 @@ source <ENV_FILE_PATH>
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
-All API calls in this skill use the following **standardized operation names**. Look up each operation in the invoked API skill for the exact curl command.
+All API calls in this skill use the following **standardized operation names**. Read each operation's exact curl command per `shared/api-dispatch.md`.
 
 **Operations used by this skill:**
 - `LIST_OPEN_CRS` — list open change requests in the group/org
@@ -145,7 +146,7 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
    a. Fetch CR details via `GET_CR`
    b. **If `state` is `merged`:** Log the merge, remove from tracking list, and **persist the tracking list** (see the Tracking-list persistence rule above — deletes the state file if `tracked_crs` becomes empty)
    c. **If `state` is `closed`:** Log the closure, remove from tracking list, and **persist the tracking list** (per the Tracking-list persistence rule above)
-   d. **If the CR has merge conflicts** (check the conflict field per the API skill's Field Reference): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
+   d. **If the CR has merge conflicts** (check the conflict field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
 
 2. **Detect author activity** — apply the **Activity-detection rule** (above) with the Phase 2 baseline (`last_review_at`).
 
@@ -156,13 +157,13 @@ After the sweep, monitor all CRs in the tracking list until each is resolved. Th
    b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list and **persist the tracking list** (per the Tracking-list persistence rule above). Continue loop for remaining CRs.
    c. Fetch CR changes (full diff) via `GET_CR_DIFF` (paginate through all pages)
    d. Fetch linked issues via `GET_CR_LINKED_ISSUES`
-   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the host-API `§ Pagination`, read per `shared/api-dispatch.md`). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
    f. **Delegate to the Re-Review Sub-Agent** — read `./sub-agents/re-review.md` and dispatch via the Agent tool
    g. **Post updated findings and manage inline threads:**
       - Post the summary comment via `POST_CR_COMMENT` (include round number, see `./templates/comment-formatting.md`)
       - Post inline comments per the **Inline Comments** section in `./templates/comment-formatting.md`
       - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author). Skip the resolve where the host lacks the endpoint (Gitea below 1.26 — see the capability-gating note below); never error
-      - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api skill), post a new inline comment instead
+      - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api SKILL.md `§ REPLY_TO_CR_THREAD`), post a new inline comment instead
    h. **Approve or revoke** based on new verdict:
       - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list and **persist the tracking list** (per the Tracking-list persistence rule above)
       - If verdict is `request_changes` → call `UNAPPROVE_CR`; update `last_review_at` = now; continue tracking
@@ -186,8 +187,8 @@ Skip a CR (do not review) if any of the following are true:
 |-----------|---------------|
 | Draft / WIP | `draft == true` OR title starts with `WIP:` or `Draft:` |
 | Already reviewed (no new activity) | `<!-- claude-review -->` marker found in comments AND `updated_at` ≤ review comment `created_at` AND no non-bot comments created after the review comment |
-| Zero changes | CR has zero changed files (check the changes/files field per the API skill's Field Reference) |
-| Merge conflicts | CR has merge conflicts (check the conflict field per the API skill's Field Reference) — leave a short note: "⚠️ This CR has merge conflicts. Please resolve before review." (only if no such note exists yet) |
+| Zero changes | CR has zero changed files (check the changes/files field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`) |
+| Merge conflicts | CR has merge conflicts (check the conflict field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`) — leave a short note: "⚠️ This CR has merge conflicts. Please resolve before review." (only if no such note exists yet) |
 
 ---
 

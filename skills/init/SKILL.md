@@ -62,7 +62,7 @@ Ask the user the following questions (use `AskUserQuestion` tool for the platfor
 From the answers, **derive automatically** (do not ask):
 - `API_BASE_URL`: GitLab → `<instance>/api/v4`; GitHub hosted → `https://api.github.com`; GitHub Enterprise → `<instance>/api/v3`; Gitea → `<instance>/api/v1`
 - `GROUP_DASHBOARD`: `<instance>/groups/<group>` (GitLab) or `<instance>/orgs/<org>` (GitHub/Gitea)
-- Which API reference skill to mention: `project-workflows:gitlab-api` / `project-workflows:github-api` / `project-workflows:gitea-api`
+- `{host}`: the lowercase platform (`gitlab` / `github` / `gitea`), which names the host-API reference (`{host}-api`)
 
 **Generate immediately:** Read `./templates/PROJECT.md` — the canonical emittable skeleton — and write it to `.claude/project-config/PROJECT.md`, populated from the answers: substitute each `{placeholder}` with its derived value, and expand every `{not-configured stanza}` to the exact two-line marker defined by the **Not-Configured Marker** in `./references/file-generation-rules.md`. The template's `{not-configured stanza}` tokens mark sections not yet collected. Keep the first line — the `<!-- pw-version: ... -->` version stamp — and all 16 `##` headings exactly as written, in order: they are the canonical **Required Section Headings** in `./references/file-generation-rules.md`. For a fuller per-section structural reference with fill-in examples, see `./references/project-md-reference.md`.
 

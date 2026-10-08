@@ -101,7 +101,7 @@ while true; do
 done
 ```
 
-> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, and `LIST_OPEN_CRS`. Any endpoint returning an array may be paginated.
+> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, `LIST_OPEN_CRS`, and `LIST_ISSUE_COMMENTS`. Any endpoint returning an array may be paginated.
 
 ---
 
@@ -704,6 +704,23 @@ curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
 **Key response fields:** Array of issue objects with `number`, `title`, `body`, `labels`, `state`, `html_url`.
 
 > **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) when filtering large issue sets.
+
+---
+
+### 29. LIST_ISSUE_COMMENTS
+
+List all comments on an issue. Same endpoint as the general-comments half of `GET_CR_COMMENTS`, since PRs are issues in GitHub.
+
+```bash
+curl -s -H "Authorization: Bearer $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/<OWNER>/{repo_name}/issues/{issue_number}/comments?per_page=100"
+```
+
+**Key response fields:** Array of comment objects with `id`, `body`, `user`, `created_at`, `updated_at`, `html_url`.
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) to get all comments.
 
 ---
 

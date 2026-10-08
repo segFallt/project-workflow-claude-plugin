@@ -4,7 +4,7 @@ Reusable workflow skills for code review, development, testing, and issue manage
 
 ## Overview
 
-`project-workflows` is a Claude Code plugin that provides 13 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
+`project-workflows` is a Claude Code plugin that provides 13 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task, makes the repository-host API calls itself, and delegates exploration, implementation, and review to specialised sub-agents.
 
 The plugin is project-agnostic — it reads project-specific configuration from files in `.claude/project-config/` (scaffolded by the `init` skill) rather than hard-coding any project details.
 
@@ -81,7 +81,7 @@ Once configured, invoke skills using the Claude Code slash command syntax:
 /project-workflows:testing-static
 ```
 
-The API reference skills (`gitlab-api`, `github-api`, `gitea-api`) are loaded automatically by other skills when needed and do not need to be invoked directly.
+The API reference skills (`gitlab-api`, `github-api`, `gitea-api`) are read section-by-section by other skills (only the operations each skill needs); they are still invocable directly.
 
 ## Versioning & Releases
 

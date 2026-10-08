@@ -126,9 +126,11 @@ Then read `../../shared/sub-agents/bug-fix.md` and dispatch via the Agent tool w
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `CREATE_CR` — create a change request after tests pass
+- `GET_CR` — get CR state (to detect when the user has merged or closed it)
 - `GET_CR_PIPELINES` — get CI pipeline/check status for a CR
 - `GET_PIPELINE_JOBS` — list jobs in a pipeline
 - `GET_JOB_LOG` — get the log for a specific job

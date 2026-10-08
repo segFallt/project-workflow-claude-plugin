@@ -186,6 +186,11 @@ export function renderTemplate(text: string, vars: Record<string, string>): stri
   return out;
 }
 
+/** Context vars plus PLUGIN_ROOT, which always names the plugin under test. */
+export function templateVars(vars: Record<string, string>, pluginRoot: string): Record<string, string> {
+  return { ...vars, PLUGIN_ROOT: pluginRoot };
+}
+
 /** Render every user-facing string of a scenario against the context vars. */
 export function renderScenario(s: Scenario, vars: Record<string, string>): Scenario {
   return {

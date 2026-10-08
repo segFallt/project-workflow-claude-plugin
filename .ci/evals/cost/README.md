@@ -53,7 +53,7 @@ Exit codes: `0` means every run passed, `1` means at least one run failed or the
 
 `baseline` runs the scenarios in this order: `work-item-create`, `work-item-refine`, `development`, `code-review`, `gitlab-api-lookup`. Before each run, it checks that the money spent so far plus that run's `maxBudgetUsd` stays within `COST_EVAL_MAX_TOTAL_USD`. If not, it stops.
 
-Scenario prompts can use the template variables `{{SEED_ISSUE_IID}}`, `{{CREATED_ISSUE_IID}}`, and `{{DEV_MR_IID}}`. The runner fills them from `out/context.json`. Scenario `capture` rules write values there, and you can also pass them with `--var`. If a variable is missing, that run fails before any model call. Repeat runs of `development` and `code-review` act on the same sandbox issue and MRs, so reset the sandbox (close the MRs, delete the branches) between rounds if you want comparable runs.
+Scenario prompts can use the template variables `{{SEED_ISSUE_IID}}`, `{{CREATED_ISSUE_IID}}`, and `{{DEV_MR_IID}}`. The runner fills them from `out/context.json`. `{{PLUGIN_ROOT}}` is always the plugin under test (`COST_EVAL_PLUGIN_DIR`) and overrides any `--var`. Scenario `capture` rules write values there, and you can also pass them with `--var`. If a variable is missing, that run fails before any model call. Repeat runs of `development` and `code-review` act on the same sandbox issue and MRs, so reset the sandbox (close the MRs, delete the branches) between rounds if you want comparable runs.
 
 ## Environment
 
@@ -91,7 +91,8 @@ Scenario notes:
 
 - `work-item-create` needs a unique `--var CREATE_OP=<op>` per run. Reusing a title trips the skill's duplicate check, so nothing gets created.
 - `development` and `development-review-round` act on seeded sandbox issues (`--var SEED_ISSUE_IID`). Don't merge their MRs until the round, including `code-review`, has finished.
-- `subagent-exploration` is read-only. It needs `--var PLUGIN_ROOT=<repo root> --var SUBAGENT_MODEL=<opus|sonnet|haiku>` and measures a single code-exploration dispatch (#70).
+- `subagent-exploration` is read-only. It needs `--var SUBAGENT_MODEL=<opus|sonnet|haiku>` and measures a single code-exploration dispatch (#70).
+- `gitlab-api-lookup-dispatch` is read-only and opt-in (not in the `baseline` order; run it with `--scenario gitlab-api-lookup-dispatch`). It resolves `CREATE_ISSUE` through `shared/api-dispatch.md`'s section reads instead of loading the whole `gitlab-api` skill, for comparison with `gitlab-api-lookup` (#71).
 
 ## Reference baselines and variance bands
 

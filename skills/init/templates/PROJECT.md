@@ -35,7 +35,7 @@ REVIEW_TOKEN_ENV_VAR=<review bot token — used only by code review skill>
 
 > **Review token:** The code review skill uses `REVIEW_TOKEN_ENV_VAR` instead of the general token. See the review skill's Environment Setup for loading instructions.
 
-Once configured, see `project-workflows:{host}-api` skill for all API interaction patterns where `{host}` is the lowercase selected platform. **The `project-workflows` plugin ships with API reference skills for each supported host (gitlab-api, github-api, gitea-api).** Do not edit these skills; they document standardized operation names used by the action skills.
+Once configured, action skills read the `{host}-api` reference section-by-section per the plugin's `shared/api-dispatch.md`, where `{host}` is the lowercase selected platform. **The `project-workflows` plugin ships a host-API reference for each supported host (`gitlab-api`, `github-api`, `gitea-api`), also invocable directly.** Do not edit them; they document the standardized operation names used by the action skills.
 
 ---
 

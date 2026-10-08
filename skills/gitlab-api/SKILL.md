@@ -93,7 +93,7 @@ while true; do
 done
 ```
 
-> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, and `LIST_OPEN_CRS`. Any endpoint returning an array may be paginated.
+> **When to paginate:** Always paginate `GET_CR_DISCUSSIONS`, `GET_CR_COMMENTS`, `GET_CR_DIFF`, `LIST_OPEN_CRS`, and `LIST_ISSUE_COMMENTS`. Any endpoint returning an array may be paginated.
 
 ---
 
@@ -559,6 +559,21 @@ curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
 **Key response fields:** Array of issue objects with `iid`, `title`, `description`, `labels`, `state`, `web_url`.
 
 > **⚠️ Pagination required:** This endpoint returns at most 100 items per page. Paginate through all pages (see Pagination section above) when filtering large issue sets.
+
+---
+
+### 29. LIST_ISSUE_COMMENTS
+
+List all notes (comments) on an issue.
+
+```bash
+curl -s -H "PRIVATE-TOKEN: $<API_TOKEN_ENV_VAR>" \
+  "<API_BASE_URL>/api/v4/projects/<GROUP>%2F{repo_name}/issues/{issue_iid}/notes?sort=asc&per_page=100"
+```
+
+**Key response fields:** Array of note objects with `id`, `body`, `author`, `created_at`, `updated_at`, `system` (boolean, true for system-generated notes — filter these out to keep only human comments).
+
+> **⚠️ Pagination required:** This endpoint returns at most 100 items per page. You MUST paginate through all pages (see Pagination section above) to get all comments.
 
 ---
 

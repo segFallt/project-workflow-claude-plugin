@@ -661,6 +661,22 @@ curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
 
 ---
 
+### 29. LIST_ISSUE_COMMENTS
+
+List all comments on an issue. Same endpoint as the general-comments half of `GET_CR_COMMENTS`, since PRs are issues in Gitea.
+
+```bash
+curl -s -H "Authorization: token $<API_TOKEN_ENV_VAR>" \
+  -H "Accept: application/json" \
+  "<INSTANCE_URL>/api/v1/repos/<OWNER>/{repo_name}/issues/{index}/comments"
+```
+
+**Key response fields:** Array of comment objects with `id`, `body`, `user`, `created_at`, `updated_at`, `html_url`.
+
+> **Note:** Not paginated: Gitea documents no `page`/`limit` here and returns every comment. Narrow with `since`/`before` (RFC 3339) when needed.
+
+---
+
 ## Inline Comment Position Object
 
 The position fields are required when posting inline comments via `POST_CR_INLINE_COMMENT`. They tell Gitea exactly which line of which file to attach the comment to. Inline comments are submitted as part of a review — not as standalone requests.

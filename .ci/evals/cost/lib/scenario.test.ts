@@ -8,6 +8,7 @@ import {
   loadScenario,
   pickFollowUp,
   renderTemplate,
+  templateVars,
   toRegExp,
   validateScenario,
 } from "./scenario";
@@ -54,7 +55,7 @@ describe("validateScenario", () => {
   test("every shipped scenario file is valid", async () => {
     const dir = join(import.meta.dir, "..", "scenarios");
     const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-    expect(files.length).toBe(8);
+    expect(files.length).toBe(9);
     for (const f of files) {
       const s = await loadScenario(join(dir, f));
       expect(`${s.id}.json`).toBe(f);
@@ -74,6 +75,19 @@ describe("renderTemplate", () => {
   test("substitutes known vars and reports missing ones", () => {
     expect(renderTemplate("#{{SEED_ISSUE_IID}}", { SEED_ISSUE_IID: "7" })).toBe("#7");
     expect(() => renderTemplate("#{{CREATED_ISSUE_IID}}", {})).toThrow("CREATED_ISSUE_IID");
+  });
+});
+
+describe("templateVars", () => {
+  test("fills PLUGIN_ROOT from the plugin under test, keeping other vars", () => {
+    const vars = templateVars({ SEED_ISSUE_IID: "7" }, "/plugins/pw");
+    expect(renderTemplate("{{PLUGIN_ROOT}}/shared/api-dispatch.md #{{SEED_ISSUE_IID}}", vars)).toBe(
+      "/plugins/pw/shared/api-dispatch.md #7",
+    );
+  });
+
+  test("the plugin under test overrides a stale PLUGIN_ROOT from context", () => {
+    expect(templateVars({ PLUGIN_ROOT: "/old" }, "/plugins/pw").PLUGIN_ROOT).toBe("/plugins/pw");
   });
 });
 

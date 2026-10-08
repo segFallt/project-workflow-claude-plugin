@@ -1,0 +1,11 @@
+{
+  "id": "gitlab-api-lookup-dispatch",
+  "description": "read-only reference lookup through shared/api-dispatch.md section reads (#71); compare with gitlab-api-lookup",
+  "writes": false,
+  "cwd": "temp",
+  "prompt": "Plugin root: {{PLUGIN_ROOT}}\nThe repository host is GitLab (there is no PROJECT.md here; skip that lookup). Read {{PLUGIN_ROOT}}/shared/api-dispatch.md and follow it with CREATE_ISSUE as the only declared operation. What is the exact curl command for the CREATE_ISSUE operation? Reply with only the command.",
+  "followUps": [],
+  "askAnswers": [],
+  "endWhen": { "maxTurns": 1 },
+  "maxBudgetUsd": 1
+}

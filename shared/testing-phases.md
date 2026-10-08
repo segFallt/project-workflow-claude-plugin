@@ -25,7 +25,7 @@ For each FAIL:
 1. **Monitor CI pipelines** — Poll pipeline status for each CR
 2. **Fix CI failures** — If a pipeline fails, fetch job logs, diagnose, push a fix commit
 3. **Notify user** — Report pipeline status and request merge approval
-4. **Wait for merge** — User merges approved CRs
+4. **Wait for merge** — User merges approved CRs; confirm each CR's state via `GET_CR`
 5. **Remove worktrees** — After each CR is merged or closed, clean up per `../../shared/worktree-setup.md § Cleanup`
 6. **Tear down stack** — `docker compose --profile app down -v`
 7. **Pull new images** — After merge, wait for registry build, then `docker compose --profile app pull`
