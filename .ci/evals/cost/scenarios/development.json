@@ -1,6 +1,6 @@
 {
   "id": "development",
-  "description": "development skill on a seeded sandbox issue: through CR creation and CI, ending when it starts watching for review feedback",
+  "description": "development skill on a seeded sandbox issue: through CR creation and CI, ending when it starts watching for review feedback (text, or mid-turn when it starts a cr-activity poll-script wait)",
   "writes": true,
   "cwd": "sandbox",
   "prompt": "/project-workflows:development #{{SEED_ISSUE_IID}}",
@@ -19,7 +19,7 @@
     },
     {
       "match": "(?i)merge_requests/\\d+|pipeline|monitor|poll",
-      "reply": "Continue monitoring the pipeline. Do not merge, close, or approve any merge request.",
+      "reply": "Continue monitoring the pipeline until it finishes. Do not merge, close, or approve any merge request.",
       "repeat": true
     },
     {
@@ -36,7 +36,8 @@
   ],
   "endWhen": {
     "assistantMatches": "(?i)watching for review|monitoring (for )?review|review[- ]feedback (loop|monitoring)|background (check|poll)[\\s\\S]{0,200}(every|still running|keeps)",
-    "maxTurns": 14
+    "maxTurns": 14,
+    "toolCommandMatches": "poll-until-change\\.py\\b[\\s\\S]*--watch[ =]cr-activity"
   },
   "capture": [
     {

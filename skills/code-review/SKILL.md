@@ -1,6 +1,7 @@
 ---
 name: code-review
 description: Use when reviewing open change requests across a project's repositories
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/poll-until-change.py *)
 ---
 
 # Automated CR Reviewer
@@ -31,6 +32,7 @@ Before running this skill, ensure the following are in place:
 | Env var | `API_TOKEN_ENV_VAR` | Fallback personal access token — used only when `REVIEW_TOKEN_ENV_VAR` is not configured |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
+| Tool | `python3` | Runs the bundled poll script for the Phase 2 wait. For unattended loops, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings (the skill's pre-approval ends at your next message) |
 
 ---
 
@@ -85,8 +87,8 @@ All API calls in this skill use the following **standardized operation names**. 
 
 This skill operates in two phases:
 
-- **Phase 1: Initial Review Sweep** — one pass through all open CRs. Use the **`/loop` skill** to discover new CRs periodically (e.g., `/loop 2m /cr-review`). The loop handles finding *new* CRs; Phase 2 handles tracking CRs that already received feedback.
-- **Phase 2: Feedback Monitoring Loop** — after the sweep, actively polls any CR that received `request_changes` until it is merged, closed, or approved.
+- **Phase 1: Initial Review Sweep** — one pass through all open CRs. Use the **`/loop` skill** to discover new CRs periodically (e.g., `/loop 2m /project-workflows:code-review`). The loop handles finding *new* CRs; Phase 2 handles tracking CRs that already received feedback.
+- **Phase 2: Feedback Monitoring Loop** — after the sweep, waits on the poll script for activity on any CR that received `request_changes` until it is merged, closed, or approved.
 
 **Activity-detection rule (referenced by both phases):** Relative to a **baseline timestamp**, a CR has new activity if EITHER (a) the CR's `updated_at` is newer than the baseline (code was pushed or metadata changed), OR (b) a comment — not authored by the review bot (this skill's own `<!-- claude-review -->` output) — has `created_at` after the baseline; in **Phase 2**, a non-bot discussion reply counts as well. The baseline differs by phase: **Phase 1** uses the `created_at` of the most recent comment containing the `<!-- claude-review -->` marker (found via `GET_CR_COMMENTS`, paginated through all pages) — it evaluates comments only, not discussions; **Phase 2** uses the tracked CR's `last_review_at`. If there is new activity → re-review; otherwise → skip (already reviewed).
 
@@ -97,7 +99,7 @@ rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
 
 ### Phase 1: Initial Review Sweep
 
-> **Note on `/loop` integration:** When this skill is invoked via `/loop` (e.g., `/loop 2m /cr-review`), each invocation runs Phase 1 (one sweep) and then Phase 2 (monitor until tracking list is empty). The `/loop` skill handles re-invoking the entire cycle at the specified interval to discover new CRs. You do NOT need to loop Phase 1 yourself — but you MUST complete Phase 2's monitoring loop fully before the invocation ends.
+> **Note on `/loop` integration:** When this skill is invoked via `/loop` (e.g., `/loop 2m /project-workflows:code-review`), each invocation runs Phase 1 (one sweep) and then Phase 2, which blocks in poll-script chunks until the tracking list is empty — so the next `/loop` sweep starts only after Phase 2 ends. You do NOT need to loop Phase 1 yourself — but you MUST complete Phase 2's monitoring loop fully before the invocation ends.
 
 0. **Hydrate tracking list from state file** — before sweeping, check if a state file exists:
    - Resolve `<PRIMARY_REPO_LOCAL_PATH>` as the `local_path` of the first repo in `PROJECT.md § Repository Dependency Order`
@@ -136,21 +138,21 @@ rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
 
 After the sweep, monitor all CRs in the tracking list until each is resolved. The Phase 1 dedup logic (`<!-- claude-review -->` marker check) applies only to the sweep; Phase 2 uses `last_review_at` timestamps for activity detection.
 
-**State reconcile (top of every iteration):** At the start of each poll iteration (`<PRIMARY_REPO_LOCAL_PATH>` resolved as in step 0 above):
+**State reconcile (every chunk exit):** Each poll-script chunk is one poll iteration. When it exits (`<PRIMARY_REPO_LOCAL_PATH>` resolved as in step 0 above):
 1. Read `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` via Python 3
 2. Reconcile `tracked_crs` — add any CRs present in the file but not in memory; remove from memory any CRs not in the file
 3. Update `updated_at` = now and write the state file atomically
 4. If the file does not exist, write the current in-memory `tracked_crs` to disk immediately
 
-1. **Poll every 90 seconds** — for each tracked CR:
+1. **Wait for activity** — one call per `../../shared/poll-wait.md` for the whole tracking list: `--watch cr-activity --ignore-self`, one `--cr <project_id>:<cr_id>` per tracked CR, `--token-env` = the token selected above, and `--fingerprint` = the tracked CRs' `last_fingerprint` values, comma-joined. If the token fell back to `API_TOKEN_ENV_VAR`, tell the user once: replies by that account will not wake the loop, only pushes and state changes. On exit `2`, re-invoke. On exit `0`, store each target's `fingerprint` entry in that CR's `last_fingerprint`, then for each CR in `changed`:
    a. Fetch CR details via `GET_CR`
    b. **If `state` is `merged`:** Log the merge, remove from tracking list, and **persist the tracking list** (see the Tracking-list persistence rule above — deletes the state file if `tracked_crs` becomes empty)
    c. **If `state` is `closed`:** Log the closure, remove from tracking list, and **persist the tracking list** (per the Tracking-list persistence rule above)
    d. **If the CR has merge conflicts** (check the conflict field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
 
-2. **Detect author activity** — apply the **Activity-detection rule** (above) with the Phase 2 baseline (`last_review_at`).
+2. **Detect author activity** on each changed CR — apply the **Activity-detection rule** (above) with the Phase 2 baseline (`last_review_at`).
 
-3. **If no new activity on any tracked CR:** Wait 90 seconds. Return to step 1.
+3. **If no new activity on any changed CR:** Return to step 1.
 
 4. **If new activity is detected on a CR:**
    a. Increment `review_round`

@@ -11,6 +11,7 @@ import {
   answerQuestions,
   endConditionMet,
   pickFollowUp,
+  toolEndConditionMet,
   type AskQuestion,
   type Scenario,
 } from "./scenario";
@@ -53,6 +54,10 @@ export interface DriverState {
   results: ResultInfo[];
   toolCounts: Record<string, number>;
   sessionId?: string;
+  /** True when endWhen.toolCommandMatches ended the run inside a turn (process stopped). */
+  endedMidTurn: boolean;
+  /** endWhen.toolCommandAfter has matched an earlier tool command. */
+  toolAfterSeen: boolean;
 }
 
 export interface DriverContext {
@@ -72,6 +77,8 @@ export function newDriverState(): DriverState {
     usedFollowUps: new Set(),
     results: [],
     toolCounts: {},
+    endedMidTurn: false,
+    toolAfterSeen: false,
   };
 }
 
@@ -113,7 +120,7 @@ function excerpt(text: string, max = 300): string {
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
 }
 
-function onAssistant(state: DriverState, event: any): Action[] {
+function onAssistant(state: DriverState, event: any, ctx: DriverContext): Action[] {
   const content = event.message?.content;
   if (!Array.isArray(content)) return [];
   const text = content
@@ -123,6 +130,18 @@ function onAssistant(state: DriverState, event: any): Action[] {
   if (text) {
     state.lastText = text;
     state.allText.push(text);
+  }
+  if (state.status !== "running") return [];
+  for (const block of content) {
+    const command = block?.type === "tool_use" ? block.input?.command : undefined;
+    if (typeof command !== "string") continue;
+    const res = toolEndConditionMet(ctx.scenario.endWhen, command, state.toolAfterSeen);
+    state.toolAfterSeen = res.afterSeen;
+    if (res.end) {
+      state.status = "ok";
+      state.endedMidTurn = true;
+      return [{ kind: "abort" }];
+    }
   }
   return [];
 }
@@ -231,7 +250,7 @@ export function step(state: DriverState, event: any, ctx: DriverContext): Action
     }
     return [];
   }
-  if (event.type === "assistant") return onAssistant(state, event);
+  if (event.type === "assistant") return onAssistant(state, event, ctx);
   if (event.type === "control_request") {
     if (!state.init) {
       fail(state, "control_request received before system/init; plugin isolation unverified");

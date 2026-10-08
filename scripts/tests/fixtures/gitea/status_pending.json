@@ -1,0 +1,2 @@
+{"state": "pending", "sha": "aaaa111122223333444455556666777788889999", "total_count": 1,
+ "statuses": [{"id": 1, "state": "pending", "context": "ci/test", "created_at": "2026-10-05T16:01:00+02:00"}]}

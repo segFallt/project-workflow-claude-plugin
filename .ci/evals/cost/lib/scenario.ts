@@ -24,6 +24,14 @@ export interface EndWhen {
   maxTurns?: number;
   /** Index into followUps: end successfully after the turn that answers that reply. */
   afterFollowUp?: number;
+  /**
+   * End the run mid-turn as soon as the model issues a tool call whose `command`
+   * matches, e.g. a foreground poll-script wait that would otherwise keep the
+   * turn open for many minutes. The process is stopped; transcripts stay complete.
+   */
+  toolCommandMatches?: string;
+  /** `toolCommandMatches` only counts once an earlier tool command matched this. */
+  toolCommandAfter?: string;
 }
 
 export interface Capture {
@@ -126,8 +134,16 @@ export function validateScenario(raw: unknown, source: string): Scenario {
   if (!end || typeof end !== "object") {
     errors.push("endWhen: required object");
   } else {
-    if (end.assistantMatches === undefined && end.maxTurns === undefined && end.afterFollowUp === undefined) {
-      errors.push("endWhen: needs assistantMatches, maxTurns and/or afterFollowUp");
+    if (end.assistantMatches === undefined && end.maxTurns === undefined && end.afterFollowUp === undefined && end.toolCommandMatches === undefined) {
+      errors.push("endWhen: needs assistantMatches, maxTurns, afterFollowUp and/or toolCommandMatches");
+    }
+    for (const key of ["toolCommandMatches", "toolCommandAfter"] as const) {
+      if (end[key] === undefined) continue;
+      if (!isNonEmptyString(end[key])) errors.push(`endWhen.${key}: must be a string`);
+      else compile(end[key] as string, `endWhen.${key}`, errors);
+    }
+    if (end.toolCommandAfter !== undefined && end.toolCommandMatches === undefined) {
+      errors.push("endWhen.toolCommandAfter: needs toolCommandMatches");
     }
     if (end.assistantMatches !== undefined) {
       if (!isNonEmptyString(end.assistantMatches)) errors.push("endWhen.assistantMatches: must be a string");
@@ -212,6 +228,19 @@ export function renderScenario(s: Scenario, vars: Record<string, string>): Scena
 export function endConditionMet(end: EndWhen, lastText: string, turns: number): boolean {
   if (end.assistantMatches !== undefined && toRegExp(end.assistantMatches).test(lastText)) return true;
   return end.maxTurns !== undefined && turns >= end.maxTurns;
+}
+
+/**
+ * Mid-turn tool end condition for one tool command. Returns whether the run
+ * ends now and whether the `toolCommandAfter` gate is open after this command
+ * (a command never satisfies its own gate).
+ */
+export function toolEndConditionMet(end: EndWhen, command: string, afterSeen: boolean): { end: boolean; afterSeen: boolean } {
+  if (end.toolCommandMatches === undefined) return { end: false, afterSeen };
+  const gateOpen = end.toolCommandAfter === undefined || afterSeen;
+  if (gateOpen && toRegExp(end.toolCommandMatches).test(command)) return { end: true, afterSeen };
+  const seen = afterSeen || (end.toolCommandAfter !== undefined && toRegExp(end.toolCommandAfter).test(command));
+  return { end: false, afterSeen: seen };
 }
 
 /**

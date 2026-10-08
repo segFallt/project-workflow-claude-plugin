@@ -1,4 +1,5 @@
 test:
   image: alpine:3.20
   script:
+    - sleep "${CI_DELAY:-0}"
     - sh -n src/calc.sh && sh test.sh

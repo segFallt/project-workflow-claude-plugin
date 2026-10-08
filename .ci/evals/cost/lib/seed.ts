@@ -10,7 +10,9 @@ import { allowedProject, assertSandboxRemote } from "./guard";
 
 export const SEED_BRANCH = "chore/seed-cost-eval";
 export const ENV_KEYS = ["API_TOKEN_ENV_VAR", "REVIEW_TOKEN_ENV_VAR", "REPO_HOST_URL"];
-const DEFAULT_HOST = "https://gitlab.n3.pingleberry.com";
+export const DEFAULT_HOST = "https://gitlab.n3.pingleberry.com";
+/** Work item the seed commit and operator MR title cite unless SeedOptions.workItem says otherwise. */
+export const DEFAULT_WORK_ITEM = "#68";
 
 /** Keep only `KEY=value` lines (optionally `export`-prefixed) for the allowed keys. */
 export function filterEnv(text: string, keys = ENV_KEYS): { content: string; found: string[] } {
@@ -43,6 +45,12 @@ export interface SeedOptions {
   sandboxDir: string;
   payloadDir: string;
   envSource: string;
+  /** Work item cited in the seed commit message and the operator MR title, e.g. "#73". */
+  workItem?: string;
+}
+
+export function seedCommitMessage(workItem = DEFAULT_WORK_ITEM): string {
+  return `chore: seed cost-eval sandbox payload (${workItem})`;
 }
 
 /** Seed the sandbox clone; returns operator instructions to print. */
@@ -67,7 +75,7 @@ export async function seedSandbox(opts: SeedOptions): Promise<string[]> {
   const staged = git(["diff", "--cached", "--name-only"], opts.sandboxDir);
   if (staged) {
     git(
-      ["-c", `user.name=${name}`, "-c", `user.email=${email}`, "commit", "-m", "chore: seed cost-eval sandbox payload (#68)"],
+      ["-c", `user.name=${name}`, "-c", `user.email=${email}`, "commit", "-m", seedCommitMessage(opts.workItem)],
       opts.sandboxDir,
     );
     notes.push(`Committed payload on ${SEED_BRANCH}:\n${staged}`);
@@ -86,7 +94,7 @@ export async function seedSandbox(opts: SeedOptions): Promise<string[]> {
   await chmod(envPath, 0o600);
   notes.push(`Wrote ${envPath} (mode 600) with ${found.join(", ")}${missing.length ? `; missing: ${missing.join(", ")}` : ""}`);
 
-  notes.push(...operatorSteps(opts.sandboxDir, project));
+  notes.push(...operatorSteps(opts.sandboxDir, project, DEFAULT_HOST, opts.workItem));
   return notes;
 }
 
@@ -97,14 +105,14 @@ export function pushUrl(project: string, host = DEFAULT_HOST): string {
 }
 
 /** Push/MR/issue commands the operator runs by hand after seeding. */
-export function operatorSteps(sandboxDir: string, project: string, host = DEFAULT_HOST): string[] {
+export function operatorSteps(sandboxDir: string, project: string, host = DEFAULT_HOST, workItem = DEFAULT_WORK_ITEM): string[] {
   const encoded = encodeURIComponent(project);
   return [
     "Operator steps (not run by this tool):",
     `  git -C ${sandboxDir} push "${pushUrl(project, host)}" ${SEED_BRANCH}   # no -u: it would persist the token URL`,
     `  curl -sS -X POST -H "PRIVATE-TOKEN: $API_TOKEN_ENV_VAR" "${host}/api/v4/projects/${encoded}/merge_requests" ` +
       `--data-urlencode "source_branch=${SEED_BRANCH}" --data-urlencode "target_branch=main" ` +
-      `--data-urlencode "title=chore: seed cost-eval sandbox (#68)"`,
+      `--data-urlencode "title=chore: seed cost-eval sandbox (${workItem})"`,
     "  Merge that MR, then: git -C <sandbox> checkout main && git -C <sandbox> pull",
     "  Create the seed issue from .ci/evals/cost/sandbox/seed-issue.md and pass its iid via --var SEED_ISSUE_IID=<iid>",
   ];

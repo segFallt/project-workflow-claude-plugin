@@ -1,0 +1,4 @@
+[
+  {"id": 11756, "iid": 40, "project_id": 3, "sha": "aaaa111122223333444455556666777788889999", "ref": "refs/merge-requests/12/head", "status": "success", "source": "merge_request_event", "web_url": "https://gitlab.example.test/grp/repo/-/pipelines/11756"},
+  {"id": 11700, "iid": 39, "project_id": 3, "sha": "cccc", "ref": "refs/merge-requests/12/head", "status": "failed", "source": "merge_request_event", "web_url": "https://gitlab.example.test/grp/repo/-/pipelines/11700"}
+]

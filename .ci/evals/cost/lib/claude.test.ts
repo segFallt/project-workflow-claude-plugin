@@ -58,6 +58,11 @@ describe("hostOutcomeFailure", () => {
   test("never overrides an existing failure", () => {
     expect(hostOutcomeFailure("failed", 143, 3)).toBeNull();
   });
+  test("accepts the non-zero exit of a deliberate mid-turn stop, but not unparsed lines", () => {
+    expect(hostOutcomeFailure("ok", 143, 0, true)).toBeNull();
+    expect(hostOutcomeFailure("ok", null, 0, true)).toBeNull();
+    expect(hostOutcomeFailure("ok", 143, 1, true)).toContain("unparsed");
+  });
 });
 
 describe("userSettingsRisk hooks (review round 2)", () => {

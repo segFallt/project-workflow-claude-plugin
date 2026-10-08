@@ -1,6 +1,7 @@
 ---
 name: testing-prd
 description: Deprecated — use testing-spec instead. Runs integration tests generated dynamically from product requirement documents.
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/poll-until-change.py *)
 ---
 
 # Integration Testing Coordinator (PRD-Driven)
@@ -36,6 +37,7 @@ Before running this skill, ensure the following are in place:
 | Tool | `curl` | Required for API and health checks |
 | Tool | `git` | Required for branch and worktree operations |
 | Tool | `docker compose` | Required for stack management |
+| Tool | `python3` | Runs the bundled CI poll script (Phase 4). For unattended loops, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings |
 | Tool | Playwright MCP | Required for browser UI checks (UI-*) |
 
 ---

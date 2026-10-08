@@ -4,9 +4,9 @@
  *
  * Usage:
  *   bun run.ts probe                                   # one isolated haiku call, prints init/plugins/result
- *   bun run.ts seed                                    # clone + commit sandbox payload (no push)
+ *   bun run.ts seed [--work-item "#73"]                # clone + commit sandbox payload (no push)
  *   bun run.ts listing-ab [--runs 3] [--model haiku]   # skill-listing A/B
- *   bun run.ts baseline [--scenario <id>]... [--runs 3] [--var NAME=value]...
+ *   bun run.ts baseline [--scenario <id>]... [--runs 3] [--var NAME=value]... [--ci-delay <s>]
  *   bun run.ts report [results/baseline-<date>.json]   # markdown table
  *   bun run.ts curate <curation.json>                  # final baseline from listed out/ runs
  *
@@ -21,6 +21,7 @@ import { applyVariantB, copyPluginTree, listingStats, pluginDetails } from "./li
 import { aggregate, renderMarkdown, stats, writeResults } from "./lib/report";
 import { gitSha, loadContext, runScenario, saveContext, type RunSummary } from "./lib/runner";
 import { loadScenario, type Scenario } from "./lib/scenario";
+import { loadCredentials, SandboxGitLab, withCiDelay } from "./lib/gitlab";
 import { seedSandbox } from "./lib/seed";
 
 const HERE = import.meta.dir;
@@ -33,6 +34,7 @@ const BASELINE_ORDER = ["work-item-create", "work-item-refine", "development", "
 const PLUGIN_DIR = resolve(process.env.COST_EVAL_PLUGIN_DIR ?? join(HERE, "..", "..", ".."));
 const SANDBOX_DIR = process.env.COST_EVAL_SANDBOX_DIR ?? join(homedir(), "cost-eval", "agent-sandbox");
 const MAX_TOTAL_USD = Number(process.env.COST_EVAL_MAX_TOTAL_USD ?? 60);
+const ENV_SOURCE = process.env.COST_EVAL_ENV_SOURCE ?? "/workspace/.claude/project-config/.env";
 
 interface Flags {
   runs: number;
@@ -40,6 +42,9 @@ interface Flags {
   scenarios: string[];
   vars: Record<string, string>;
   positional: string[];
+  /** Seconds the sandbox CI job sleeps (sets the CI_DELAY project variable for the command). */
+  ciDelay?: number;
+  workItem?: string;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -60,6 +65,12 @@ function parseFlags(argv: string[]): Flags {
       const m = value().match(/^([A-Z][A-Z0-9_]*)=(.+)$/);
       if (!m) throw new Error("--var expects NAME=value");
       flags.vars[m[1]] = m[2];
+    } else if (arg === "--ci-delay") {
+      flags.ciDelay = Number(value());
+      if (!Number.isInteger(flags.ciDelay) || flags.ciDelay < 0) throw new Error("--ci-delay must be a non-negative integer");
+    } else if (arg === "--work-item") {
+      flags.workItem = value();
+      if (!/^#\d+$/.test(flags.workItem)) throw new Error('--work-item expects "#<iid>"');
     } else if (arg.startsWith("--")) throw new Error(`unknown flag: ${arg}`);
     else flags.positional.push(arg);
   }
@@ -108,17 +119,26 @@ async function cmdProbe(): Promise<number> {
   return r.ok ? 0 : 1;
 }
 
-async function cmdSeed(): Promise<number> {
+async function cmdSeed(flags: Flags): Promise<number> {
   const notes = await seedSandbox({
     sandboxDir: SANDBOX_DIR,
     payloadDir: join(HERE, "sandbox", "payload"),
-    envSource: process.env.COST_EVAL_ENV_SOURCE ?? "/workspace/.claude/project-config/.env",
+    envSource: ENV_SOURCE,
+    workItem: flags.workItem,
   });
   process.stdout.write(notes.join("\n") + "\n");
   return 0;
 }
 
+/** `baseline`, wrapped so the runner (not the model) sets CI_DELAY on the sandbox and always removes it. */
 async function cmdBaseline(flags: Flags): Promise<number> {
+  if (flags.ciDelay === undefined) return runBaseline(flags);
+  const client = new SandboxGitLab(await loadCredentials(ENV_SOURCE), fetch);
+  process.stdout.write(`Setting ${client.project} CI_DELAY=${flags.ciDelay}s for this command\n`);
+  return withCiDelay(client, flags.ciDelay, () => runBaseline(flags));
+}
+
+async function runBaseline(flags: Flags): Promise<number> {
   await mkdir(OUT_DIR, { recursive: true });
   const ids = flags.scenarios.length ? flags.scenarios : BASELINE_ORDER;
   const scenarios: Scenario[] = [];
@@ -283,11 +303,13 @@ async function cmdCurate(flags: Flags): Promise<number> {
 async function main(): Promise<number> {
   const [command, ...rest] = process.argv.slice(2);
   const flags = parseFlags(rest);
+  if (flags.ciDelay !== undefined && command !== "baseline") throw new Error("--ci-delay applies to baseline only");
+  if (flags.workItem !== undefined && command !== "seed") throw new Error("--work-item applies to seed only");
   switch (command) {
     case "probe":
       return cmdProbe();
     case "seed":
-      return cmdSeed();
+      return cmdSeed(flags);
     case "baseline":
       return cmdBaseline(flags);
     case "listing-ab":

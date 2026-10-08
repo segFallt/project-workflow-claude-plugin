@@ -1,6 +1,7 @@
 ---
 name: testing-spec
 description: Use when running integration tests generated from specifications — PRDs, issues, and Gherkin .feature acceptance criteria
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/poll-until-change.py *)
 ---
 
 # Integration Testing Coordinator (Spec-Driven)
@@ -26,6 +27,7 @@ This skill supersedes `testing-prd`. `testing-static` is unrelated (a hand-writt
 | Config | `.claude/project-config/SPEC-MANIFEST.md` | Spec sources, extraction rules, test-ID prefixes, priorities, dedup. **Falls back to the legacy `PRD-MANIFEST.md`** — see Phase 0, Step 0a |
 | Env var | `API_TOKEN_ENV_VAR` | Repository host token, sourced from `<ENV_FILE_PATH>` |
 | Tool | `curl`, `git`, `docker compose` | API/health checks, branches/worktrees, stack management |
+| Tool | `python3` | Runs the bundled CI poll script (Phase 4). For unattended loops, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings |
 | Tool | Playwright MCP | Browser UI checks (`UI-*`) |
 | Tool (optional) | Gherkin parser CLI | Used if present; inline fallback otherwise — see Step 0b |
 

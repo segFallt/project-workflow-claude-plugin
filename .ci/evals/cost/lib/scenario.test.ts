@@ -9,6 +9,7 @@ import {
   pickFollowUp,
   renderTemplate,
   templateVars,
+  toolEndConditionMet,
   toRegExp,
   validateScenario,
 } from "./scenario";
@@ -164,5 +165,24 @@ describe("applyCaptures", () => {
       ["opened /-/merge_requests/3", "updated /-/merge_requests/4"],
     );
     expect(r).toEqual({ values: { DEV_MR_IID: "4" }, missing: ["CREATED_ISSUE_IID"] });
+  });
+});
+
+describe("toolEndConditionMet", () => {
+  const end = { toolCommandMatches: "--watch[ =]cr-activity", toolCommandAfter: "resolved" };
+  test("a command never opens its own gate", () => {
+    expect(toolEndConditionMet(end, "x --watch cr-activity resolved", false)).toEqual({ end: false, afterSeen: true });
+    expect(toolEndConditionMet(end, "x --watch cr-activity", true)).toEqual({ end: true, afterSeen: true });
+  });
+  test("ungated and absent conditions", () => {
+    expect(toolEndConditionMet({ toolCommandMatches: "cr-activity" }, "--watch cr-activity", false).end).toBe(true);
+    expect(toolEndConditionMet({ maxTurns: 3 }, "--watch cr-activity", false)).toEqual({ end: false, afterSeen: false });
+  });
+  test("validation accepts toolCommandMatches alone and rejects a dangling or invalid gate", () => {
+    expect(validateScenario({ ...valid, endWhen: { toolCommandMatches: "x" } }, "s.json").endWhen.toolCommandMatches).toBe("x");
+    expect(() => validateScenario({ ...valid, endWhen: { maxTurns: 1, toolCommandAfter: "x" } }, "s.json")).toThrow(
+      /toolCommandAfter: needs toolCommandMatches/,
+    );
+    expect(() => validateScenario({ ...valid, endWhen: { toolCommandMatches: "(" } }, "s.json")).toThrow(/invalid regex/);
   });
 });

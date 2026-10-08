@@ -104,10 +104,16 @@ export async function assertUserSettingsSafe(path = userSettingsPath()): Promise
  * Failure reason for a run the driver marked ok but whose process output is
  * suspect (unparsed stdout lines, non-zero exit), or null. Existing failures win.
  */
-export function hostOutcomeFailure(status: DriverState["status"], exitCode: number | null, unparsedLines: number): string | null {
+export function hostOutcomeFailure(
+  status: DriverState["status"],
+  exitCode: number | null,
+  unparsedLines: number,
+  endedMidTurn = false,
+): string | null {
   if (status !== "ok") return null;
   if (unparsedLines > 0) return `${unparsedLines} unparsed stdout line(s); events may be missing`;
-  if (exitCode !== 0) return `claude exited with code ${exitCode} after the end condition`;
+  // A mid-turn end stops the process on purpose, so its exit code is expected to be non-zero.
+  if (exitCode !== 0 && !endedMidTurn) return `claude exited with code ${exitCode} after the end condition`;
   return null;
 }
 
@@ -207,7 +213,7 @@ export async function runClaude(opts: HostOptions): Promise<HostResult> {
     state.status = "failed";
     state.reason = "no system/init event seen; plugin isolation unverified";
   }
-  const outcome = hostOutcomeFailure(state.status, exitCode, unparsedLines);
+  const outcome = hostOutcomeFailure(state.status, exitCode, unparsedLines, state.endedMidTurn);
   if (outcome) {
     state.status = "failed";
     state.reason = outcome;

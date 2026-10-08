@@ -235,3 +235,4 @@
 .ci/evals/cost/out/
 .ci/evals/cost/results/
 .ci/evals/cost/curation-*.json
+__pycache__/

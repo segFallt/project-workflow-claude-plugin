@@ -194,3 +194,47 @@ describe("sandbox write guard", () => {
     expect((actions[0] as any).message.response.response).toEqual({ behavior: "allow", updatedInput: { command: cmd } });
   });
 });
+
+describe("mid-turn tool end condition (chunked foreground waits)", () => {
+  const toolUse = (command: string, text?: string) => ({
+    type: "assistant",
+    message: {
+      content: [
+        ...(text ? [{ type: "text", text }] : []),
+        { type: "tool_use", id: "t", name: "Bash", input: { command, timeout: 600000 } },
+      ],
+    },
+  });
+  const POLL_PIPELINE = "python3 /p/scripts/poll-until-change.py --host gitlab --watch pipeline --cr g/r:1 --max-wait 540";
+  const POLL_ACTIVITY = "python3 /p/scripts/poll-until-change.py --host gitlab --watch cr-activity --cr g/r:1 --ignore-self";
+  const RESOLVE = `curl -s -X PUT -d '{"resolved": true}' "https://h/api/v4/projects/g%2Fr/merge_requests/1/discussions/abc"`;
+  const end = { assistantMatches: "(?i)never", toolCommandMatches: "poll-until-change\\.py\\b.*--watch[ =]cr-activity" };
+
+  test("ends ok and stops the process when the matching command starts, without a result event", () => {
+    const { state, actions } = drive(
+      [init, toolUse(POLL_PIPELINE), toolUse(POLL_ACTIVITY, "Pipeline is green; watching for review feedback.")],
+      scenario({ endWhen: end }),
+    );
+    expect(state.status).toBe("ok");
+    expect(state.endedMidTurn).toBe(true);
+    expect(state.turns).toBe(0);
+    expect(actions).toEqual([{ kind: "abort" }]);
+    expect(state.allText).toContain("Pipeline is green; watching for review feedback.");
+  });
+
+  test("toolCommandAfter gates the end on an earlier command", () => {
+    const sc = scenario({ endWhen: { ...end, toolCommandAfter: '"resolved"\\s*:\\s*true' } });
+    const early = drive([init, toolUse(POLL_ACTIVITY)], sc);
+    expect(early.state.status).toBe("running");
+    expect(early.state.endedMidTurn).toBe(false);
+    const done = drive([init, toolUse(POLL_ACTIVITY), toolUse(RESOLVE), toolUse(POLL_PIPELINE), toolUse(POLL_ACTIVITY)], sc);
+    expect(done.state.status).toBe("ok");
+    expect(done.state.endedMidTurn).toBe(true);
+  });
+
+  test("without toolCommandMatches, tool calls never end the run", () => {
+    const { state, actions } = drive([init, toolUse(POLL_ACTIVITY)]);
+    expect(state.status).toBe("running");
+    expect(actions).toEqual([]);
+  });
+});

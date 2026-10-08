@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { filterEnv, operatorSteps, pushUrl } from "./seed";
+import { filterEnv, operatorSteps, pushUrl, seedCommitMessage } from "./seed";
 
 describe("filterEnv", () => {
   test("keeps only the allowed keys, first occurrence, export prefix tolerated", () => {
@@ -32,5 +32,12 @@ describe("operator steps", () => {
     expect(push).toContain("# no -u");
     expect(mr).toContain("https://gitlab.example.test:8443/api/v4/projects/grp%2Fproj/merge_requests");
     expect([push, mr].join()).not.toContain("pingleberry");
+  });
+  test("seed commit message and MR title cite the given work item (default #68)", () => {
+    expect(seedCommitMessage()).toBe("chore: seed cost-eval sandbox payload (#68)");
+    expect(seedCommitMessage("#73")).toBe("chore: seed cost-eval sandbox payload (#73)");
+    const [, , mr] = operatorSteps("/s", "grp/proj", "https://gitlab.example.test", "#73");
+    expect(mr).toContain('"title=chore: seed cost-eval sandbox (#73)"');
+    expect(operatorSteps("/s", "grp/proj", "https://gitlab.example.test")[2]).toContain("(#68)");
   });
 });

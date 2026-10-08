@@ -61,6 +61,11 @@ export interface RunSummary {
   exitCode?: number | null;
   /** stdout lines that were not JSON; absent in results written before it was recorded. */
   unparsedLines?: number;
+  /**
+   * The run ended inside a turn (endWhen.toolCommandMatches): total_cost_usd and
+   * turnCosts miss that last partial turn; transcript tokens include it.
+   */
+  endedMidTurn?: boolean;
 }
 
 const DEFAULT_TIMEOUT_MS = Number(process.env.COST_EVAL_RUN_TIMEOUT_MIN ?? 60) * 60_000;
@@ -159,6 +164,7 @@ export async function runScenario(opts: RunOptions): Promise<RunSummary> {
       sessionId: st.sessionId,
       exitCode: host.exitCode,
       unparsedLines: host.unparsedLines,
+      endedMidTurn: st.endedMidTurn,
       total_cost_usd: st.results.at(-1)?.total_cost_usd ?? 0,
       turnCosts: turnCostDeltas(st.results.map((r) => r.total_cost_usd)),
     });

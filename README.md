@@ -29,6 +29,12 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 ## Prerequisites
 
 - [Claude Code CLI](https://claude.ai/code) installed (`npm install -g @anthropic-ai/claude-code`)
+- `curl` and `git` — used by the skills for host API calls and repository operations
+- `python3` (standard library only) — runs the bundled `scripts/poll-until-change.py`, which waits on CI and review activity for `development`, `code-review` and the testing skills
+- For unattended CI/review loops, allow the poll script permanently in your Claude Code settings. The skills pre-approve it only for the turn that invokes them:
+  ```json
+  { "permissions": { "allow": ["Bash(python3 */scripts/poll-until-change.py *)"] } }
+  ```
 
 ## Installation
 

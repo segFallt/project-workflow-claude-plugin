@@ -1,0 +1,7 @@
+{
+  "id": 9001, "iid": 12, "project_id": 3, "title": "feat: export", "state": "opened",
+  "sha": "aaaa111122223333444455556666777788889999",
+  "diff_refs": {"base_sha": "bbbb", "head_sha": "aaaa111122223333444455556666777788889999", "start_sha": "bbbb"},
+  "has_conflicts": false, "detailed_merge_status": "mergeable",
+  "updated_at": "2026-10-05T16:00:58.891Z", "web_url": "https://gitlab.example.test/grp/repo/-/merge_requests/12"
+}
