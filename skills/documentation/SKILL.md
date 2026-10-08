@@ -51,4 +51,4 @@ Write each approved document to its `path`. Add each `registration` entry to `PR
 | Document sizing + drafting (`doc-authoring`) | User interaction and approval |
 | Codebase context (`code-exploration`) | Writing approved files; registering in `PROJECT.md` |
 
-Dispatch sub-agents with the **Agent tool** — never invoke another skill via the Skill tool, and never nest coordinators.
+Dispatch sub-agents with the **Agent tool**, passing `model` per `../../shared/model-tiering.md` — never invoke another skill via the Skill tool, and never nest coordinators.

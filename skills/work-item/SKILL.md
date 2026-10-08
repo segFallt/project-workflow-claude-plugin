@@ -126,7 +126,7 @@ A phased loop. **Lifecycle rules are NEVER hardcoded in this skill** — they co
 | Summarising technical context | Body composition and rewrite |
 | Flagging config dependencies and risks | User interaction and escalation |
 
-Dispatch via `../../shared/sub-agents/code-exploration.md`, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined there.
+Dispatch via `../../shared/sub-agents/code-exploration.md`, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined there, with `model` per `../../shared/model-tiering.md`.
 
 ---
 

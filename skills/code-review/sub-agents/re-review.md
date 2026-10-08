@@ -10,6 +10,7 @@ This sub-agent is dispatched by the `code-review` skill orchestrator during Phas
 
 Dispatch the **Shared Prompt Template** in `./_common.md`, substituting the shared placeholders (see its **Shared Placeholder Reference Rows**) plus these Phase 2 delta values:
 
+- `{tier key}` — `code-review-re-review` (selects the dispatch `model`; not substituted into the prompt)
 - `{additional CR Details}` — one extra bullet:
   - `- **Review Round:** {review_round}`
 - `{additional input sections}` — insert these two sections (after `## Linked Issue`, before `## Standards`):

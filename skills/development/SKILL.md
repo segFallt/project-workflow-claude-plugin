@@ -320,15 +320,15 @@ Use lowercase, hyphens only, no special characters. Keep `{short-description}` t
 
 ### Sub-Agent Reference
 
-Each sub-agent is dispatched the same way: **read its prompt file and dispatch via the Agent tool, substituting all `{placeholder}` values defined in that file.** The dispatch instructions are also given inline at the phase steps below.
+Each sub-agent is dispatched the same way: **read its prompt file and dispatch via the Agent tool, substituting all `{placeholder}` values defined in that file, with `model` resolved for its Tier key per `../../shared/model-tiering.md`.** The dispatch instructions are also given inline at the phase steps below; the same `model` rule applies there.
 
-| Sub-agent | Prompt path | Dispatched at | Returns |
-|-----------|-------------|---------------|---------|
-| Code exploration | `../../shared/sub-agents/code-exploration.md` (substitute `{purpose}` = `"design"`) | Phase 2, step 1 | `files_to_modify`, `files_to_create`, `tests_to_update`, `reference_patterns`, `dependencies`, `risk_areas` |
-| Implementation | `./sub-agents/implementation.md` | Phase 3, step 3 (per logical unit); Phase 5, step 2e (non-trivial CI fixes) | — |
-| Test writing | `./sub-agents/test-writing.md` | Phase 3, step 5 | — |
-| Review feedback | `./sub-agents/review-feedback.md` | Phase 6, step 4e | `changes_made`, `skipped`, `lint_result`, `test_result` |
-| Doc authoring | `../../shared/sub-agents/doc-authoring.md` | Requirements Documentation step | Registration entries for the authored/updated documents |
+| Sub-agent | Prompt path | Tier key | Dispatched at | Returns |
+|-----------|-------------|----------|---------------|---------|
+| Code exploration | `../../shared/sub-agents/code-exploration.md` (substitute `{purpose}` = `"design"`) | `code-exploration` | Phase 2, step 1 | `files_to_modify`, `files_to_create`, `tests_to_update`, `reference_patterns`, `dependencies`, `risk_areas` |
+| Implementation | `./sub-agents/implementation.md` | `implementation` | Phase 3, step 3 (per logical unit); Phase 5, step 2e (non-trivial CI fixes) | — |
+| Test writing | `./sub-agents/test-writing.md` | `test-writing` | Phase 3, step 5 | — |
+| Review feedback | `./sub-agents/review-feedback.md` | `review-feedback` | Phase 6, step 4e | `changes_made`, `skipped`, `lint_result`, `test_result` |
+| Doc authoring | `../../shared/sub-agents/doc-authoring.md` | `doc-authoring` | Requirements Documentation step | Registration entries for the authored/updated documents |
 
 ### Output Templates
 

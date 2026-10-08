@@ -106,6 +106,8 @@ Read `../../shared/testing-error-handling.md`.
 | Linting and formatting | Health checks and verification |
 | | Test execution |
 
+Pass `model` per `../../shared/model-tiering.md`: the bug-fix dispatch below uses key `bug-fix`; test-writing and linting dispatches have no key, so omit `model`.
+
 ### Dispatching the Bug-Fix Sub-Agent
 
 Before dispatching, create a worktree for the fix branch per `../../shared/worktree-setup.md`:

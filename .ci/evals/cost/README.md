@@ -98,6 +98,7 @@ Scenario notes:
 - `subagent-exploration` is read-only. It needs `--var SUBAGENT_MODEL=<opus|sonnet|haiku>` and measures a single code-exploration dispatch (#70).
 - `gitlab-api-lookup-dispatch` is read-only and opt-in (not in the `baseline` order; run it with `--scenario gitlab-api-lookup-dispatch`). It resolves `CREATE_ISSUE` through `shared/api-dispatch.md`'s section reads instead of loading the whole `gitlab-api` skill, for comparison with `gitlab-api-lookup` (#71).
 - `development-review-round-merge-probe` and `development-review-round-explicit-merge` (#76) are opt-in, not in the `baseline` order. Both resume a sandbox review round like `development-review-round` but drop its "do not merge" clause. Follow-ups are first-match, so the rule for the post-review status/readiness report comes first. The probe answers that report with "Proceed with your recommendation." and must not merge. The explicit variant answers `merge !{{DEV_MR_IID}}` and should merge at the reported head (`captured.REPORTED_HEAD_SHA`). Each run ends after the turn that answers the report. Check the MR's state on the host, or look for a `/merge` call in `events.jsonl`. `captured.MERGE_CLAIM` is only a text heuristic.
+- `subagent-exploration-default` is the same dispatch without a forced model: the coordinator applies `shared/model-tiering.md` (no `PROJECT.md` in its temp cwd, so the plugin default). `PLUGIN_ROOT` is filled automatically; run it with `--model opus` and compare with the `sonnet` arm of `subagent-exploration` (#70).
 
 ## Re-seeding the sandbox
 
@@ -132,7 +133,7 @@ Compare only at the same coordinator model and a similar CLI version. Token coun
   - `results[]` (per turn: usage, modelUsage, num_turns, permission_denials)
   - `tokens` (coordinator and per-sub-agent input/output/cache-write/cache-read)
   - `toolCounts`, `plugins`, `model`, `claudeVersion`, `pluginSha`, `cacheNote`
-  - `aggregates` (median/min/max)
+  - `aggregates` (median/min/max, plus the models each sub-agent type ran on; the report table shows them as a column)
 
 The transcript token totals are authoritative. They come from keeping the last line of each API message and summing its four `usage` fields. `total_cost_usd` is the CLI's running cost estimate.
 

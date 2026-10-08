@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Single owner of document sizing and authoring for the documentation framework. Dispatched via the Agent tool by the `documentation` skill (issue #30) and by the `development` skill (issue #31). It reads the escalation matrix in `shared/documentation-taxonomy.md`, decides which documents a change needs, drafts them from the `skills/documentation/templates/` templates, writes the PRD's Gherkin acceptance criteria, and reports where to register each document.
+Single owner of document sizing and authoring for the documentation framework. Dispatched via the Agent tool by the `documentation` and `development` skills. It reads the escalation matrix in `shared/documentation-taxonomy.md`, decides which documents a change needs, drafts them from the `skills/documentation/templates/` templates, writes the PRD's Gherkin acceptance criteria, and reports where to register each document.
 
 The sizing and authoring logic lives **only** here — coordinators dispatch this sub-agent rather than restating the taxonomy or escalation rules.
 
@@ -10,7 +10,7 @@ The sizing and authoring logic lives **only** here — coordinators dispatch thi
 
 ## Prompt Template
 
-Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values:
+Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values, and pass `model` resolved for key `doc-authoring` per `shared/model-tiering.md` (omit when it resolves to `inherit`):
 
 ```
 You author right-sized documentation for the project described in `.claude/project-config/PROJECT.md`.

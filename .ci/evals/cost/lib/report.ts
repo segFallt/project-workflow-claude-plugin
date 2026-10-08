@@ -30,6 +30,8 @@ export interface ScenarioAggregate {
   costUsd: Stats | null;
   tokens: Record<keyof TokenTotals, Stats | null> | null;
   subagentTokens: Stats | null;
+  /** Sub-agent (dispatch description, else agent type) → every model it ran on, across successful runs. */
+  subagentModels: Record<string, string[]>;
 }
 
 const FIELDS: (keyof TokenTotals)[] = [
@@ -41,6 +43,17 @@ const FIELDS: (keyof TokenTotals)[] = [
 
 function totalOf(t: TokenTotals): number {
   return FIELDS.reduce((acc, f) => acc + t[f], 0);
+}
+
+function modelsBySubagent(runs: RunSummary[]): Record<string, string[]> {
+  const byType = new Map<string, Set<string>>();
+  for (const s of runs.flatMap((r) => r.tokens?.subagents ?? [])) {
+    const type = s.description ?? s.agentType ?? "unknown";
+    const set = byType.get(type) ?? new Set<string>();
+    s.models.forEach((m) => set.add(m));
+    byType.set(type, set);
+  }
+  return Object.fromEntries([...byType].sort(([a], [b]) => a.localeCompare(b)).map(([t, m]) => [t, [...m].sort()]));
 }
 
 /** Aggregate successful runs per scenario (failed runs are counted, not measured). */
@@ -66,6 +79,7 @@ export function aggregate(runs: RunSummary[]): ScenarioAggregate[] {
       subagentTokens: stats(
         withTokens.map((r) => r.tokens!.subagents.reduce((acc, s) => acc + totalOf(s.tokens), 0)),
       ),
+      subagentModels: modelsBySubagent(withTokens),
     };
   });
 }
@@ -91,6 +105,11 @@ function money(s: Stats | null): string {
   return s ? `$${s.median.toFixed(4)} ($${s.min.toFixed(4)}–$${s.max.toFixed(4)})` : "–";
 }
 
+function models(byType: Record<string, string[]>): string {
+  const entries = Object.entries(byType);
+  return entries.length ? entries.map(([t, m]) => `${t}: ${m.join(", ")}`).join("; ") : "–";
+}
+
 function count(s: Stats | null | undefined): string {
   return s ? Math.round(s.median).toLocaleString("en-US") : "–";
 }
@@ -98,13 +117,13 @@ function count(s: Stats | null | undefined): string {
 /** Markdown table: one row per scenario; token columns are medians. */
 export function renderMarkdown(aggregates: ScenarioAggregate[]): string {
   const header =
-    "| Scenario | OK / failed | Cost median (min–max) | Input | Output | Cache write | Cache read | Sub-agent tokens |\n" +
-    "|---|---|---|---|---|---|---|---|";
+    "| Scenario | OK / failed | Cost median (min–max) | Input | Output | Cache write | Cache read | Sub-agent tokens | Sub-agent models |\n" +
+    "|---|---|---|---|---|---|---|---|---|";
   const rows = aggregates.map(
     (a) =>
       `| ${a.scenario} | ${a.ok} / ${a.failed} | ${money(a.costUsd)} | ${count(a.tokens?.input_tokens)} | ` +
       `${count(a.tokens?.output_tokens)} | ${count(a.tokens?.cache_creation_input_tokens)} | ` +
-      `${count(a.tokens?.cache_read_input_tokens)} | ${count(a.subagentTokens)} |`,
+      `${count(a.tokens?.cache_read_input_tokens)} | ${count(a.subagentTokens)} | ${models(a.subagentModels)} |`,
   );
   return [header, ...rows].join("\n");
 }

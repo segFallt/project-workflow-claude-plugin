@@ -64,7 +64,7 @@ describe("validateScenario", () => {
   test("every shipped scenario file is valid", async () => {
     const dir = join(import.meta.dir, "..", "scenarios");
     const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-    expect(files.length).toBe(11);
+    expect(files.length).toBe(12);
     for (const f of files) {
       const s = await loadScenario(join(dir, f));
       expect(`${s.id}.json`).toBe(f);

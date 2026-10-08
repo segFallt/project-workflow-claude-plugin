@@ -160,7 +160,7 @@ Fetch labels from the API before composing the issue. Only use labels that actua
 
 ### Code Exploration Sub-Agent
 
-Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined in that file.
+Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined in that file, with `model` per `../../shared/model-tiering.md`.
 
 ---
 

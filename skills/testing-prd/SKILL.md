@@ -289,6 +289,8 @@ Additional error handling for PRD-driven testing:
 | | Test execution |
 | | PRD file reading and matrix generation |
 
+Pass `model` per `../../shared/model-tiering.md`: the bug-fix dispatch below uses key `bug-fix`; test-writing and linting dispatches have no key, so omit `model`.
+
 ### Dispatching the Bug-Fix Sub-Agent
 
 Before dispatching, create a worktree for the fix branch per `../../shared/worktree-setup.md`:

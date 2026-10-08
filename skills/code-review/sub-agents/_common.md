@@ -4,7 +4,7 @@ Shared scaffold for `initial-review.md` (Phase 1) and `re-review.md` (Phase 2). 
 
 ## Shared Prompt Template
 
-Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values — the shared ones below and the delta values defined in the referencing sub-agent file:
+Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values — the shared ones below and the delta values defined in the referencing sub-agent file — and pass `model` resolved for the delta `{tier key}` per `shared/model-tiering.md` (omit when it resolves to `inherit`):
 
 ```
 You are a code reviewer for the project described in `.claude/project-config/PROJECT.md`.

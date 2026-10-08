@@ -31,3 +31,28 @@ describe("aggregate + renderMarkdown", () => {
     expect(md).toContain("| s1 | 2 / 1 | $2.0000 ($1.0000–$3.0000) | 210 |");
   });
 });
+
+describe("sub-agent models", () => {
+  const withSubs = (subagents: { agentType?: string; description?: string; models: string[] }[]): RunSummary =>
+    ({
+      scenario: "s2",
+      ok: true,
+      total_cost_usd: 1,
+      tokens: { ...tokens(1, 1), subagents: subagents.map((s) => ({ ...tokens(1, 1).subagents[0], ...s })) },
+    }) as unknown as RunSummary;
+
+  test("maps each sub-agent (description, else agent type) to the models it ran on across runs", () => {
+    const [a] = aggregate([
+      withSubs([{ agentType: "general-purpose", description: "Explore code", models: ["claude-sonnet"] }, { agentType: "general-purpose", models: ["claude-opus"] }, { models: ["claude-opus"] }]),
+      withSubs([{ agentType: "general-purpose", description: "Explore code", models: ["claude-haiku"] }]),
+    ]);
+    expect(a.subagentModels).toEqual({ "Explore code": ["claude-haiku", "claude-sonnet"], "general-purpose": ["claude-opus"], unknown: ["claude-opus"] });
+    expect(renderMarkdown([a])).toContain("| Explore code: claude-haiku, claude-sonnet; general-purpose: claude-opus; unknown: claude-opus |");
+  });
+
+  test("renders a dash when no sub-agent ran", () => {
+    const [a] = aggregate([withSubs([])]);
+    expect(a.subagentModels).toEqual({});
+    expect(renderMarkdown([a])).toMatch(/\| – \|$/);
+  });
+});

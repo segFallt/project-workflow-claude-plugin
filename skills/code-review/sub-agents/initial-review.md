@@ -10,6 +10,7 @@ This sub-agent is dispatched by the `code-review` skill orchestrator during Phas
 
 Dispatch the **Shared Prompt Template** in `./_common.md`, substituting the shared placeholders (see its **Shared Placeholder Reference Rows**) plus these Phase 1 delta values:
 
+- `{tier key}` — `code-review-initial` (selects the dispatch `model`; not substituted into the prompt)
 - `{additional CR Details}` — none (omit the line)
 - `{additional input sections}` — none (omit the line)
 - `{review history clause}` — empty (no prior review; the sentence reads "Review every changed file against the criteria.")

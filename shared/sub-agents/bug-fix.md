@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This sub-agent is dispatched by the testing orchestrator (both `testing-static` and `testing-prd` skills) during Phase 3: Bug Triage & Fix Cycle. When a failing check has been diagnosed and the user has approved the proposed fix approach, the orchestrator spawns this sub-agent via the Agent tool to implement the fix in a dedicated git worktree.
+This sub-agent is dispatched by the testing orchestrator (the `testing-static`, `testing-spec` and `testing-prd` skills) during Phase 3: Bug Triage & Fix Cycle. When a failing check has been diagnosed and the user has approved the proposed fix approach, the orchestrator spawns this sub-agent via the Agent tool to implement the fix in a dedicated git worktree.
 
 The sub-agent handles all code and config changes, runs lint and tests, then returns control to the orchestrator which validates the fix and creates the change request.
 
@@ -10,7 +10,7 @@ The sub-agent handles all code and config changes, runs lint and tests, then ret
 
 ## Prompt Template
 
-Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values:
+Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values, and pass `model` resolved for key `bug-fix` per `shared/model-tiering.md` (omit when it resolves to `inherit`):
 
 ```
 You are a developer fixing a bug in the project described in `.claude/project-config/PROJECT.md`.
