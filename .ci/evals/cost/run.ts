@@ -5,8 +5,8 @@
  * Usage:
  *   bun run.ts probe                                   # one isolated haiku call, prints init/plugins/result
  *   bun run.ts seed [--work-item "#73"]                # clone + commit sandbox payload (no push)
- *   bun run.ts listing-ab [--runs 3] [--model haiku]   # skill-listing A/B
- *   bun run.ts baseline [--scenario <id>]... [--runs 3] [--var NAME=value]... [--ci-delay <s>]
+ *   bun run.ts listing-ab [--runs 3] [--model haiku] [--strict-mcp-config]   # skill-listing A/B
+ *   bun run.ts baseline [--scenario <id>]... [--runs 3] [--var NAME=value]... [--ci-delay <s>] [--strict-mcp-config]
  *   bun run.ts report [results/baseline-<date>.json]   # markdown table
  *   bun run.ts curate <curation.json>                  # final baseline from listed out/ runs
  *
@@ -18,7 +18,7 @@ import { homedir, tmpdir } from "os";
 import { join, resolve } from "path";
 import { claudeVersion } from "./lib/claude";
 import { applyVariantB, copyPluginTree, listingStats, pluginDetails } from "./lib/listing";
-import { aggregate, renderMarkdown, stats, writeResults } from "./lib/report";
+import { aggregate, mixedStrictMcp, renderMarkdown, stats, writeResults } from "./lib/report";
 import { gitSha, loadContext, runScenario, saveContext, type RunSummary } from "./lib/runner";
 import { loadScenario, type Scenario } from "./lib/scenario";
 import { loadCredentials, SandboxGitLab, withCiDelay } from "./lib/gitlab";
@@ -45,6 +45,8 @@ interface Flags {
   /** Seconds the sandbox CI job sleeps (sets the CI_DELAY project variable for the command). */
   ciDelay?: number;
   workItem?: string;
+  /** Pass `--strict-mcp-config` to every run (baseline, listing-ab). */
+  strictMcpConfig?: boolean;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -60,6 +62,7 @@ function parseFlags(argv: string[]): Flags {
       flags.runs = Number(value());
       if (!Number.isInteger(flags.runs) || flags.runs < 1) throw new Error("--runs must be a positive integer");
     } else if (arg === "--model") flags.model = value();
+    else if (arg === "--strict-mcp-config") flags.strictMcpConfig = true;
     else if (arg === "--scenario") flags.scenarios.push(value());
     else if (arg === "--var") {
       const m = value().match(/^([A-Z][A-Z0-9_]*)=(.+)$/);
@@ -94,8 +97,8 @@ function printRun(r: RunSummary): void {
   process.stdout.write(`[${r.runId}] ${status} cost=$${r.total_cost_usd.toFixed(4)}\n`);
 }
 
-function commonRunFields() {
-  return { pluginSha: gitSha(PLUGIN_DIR), claudeVersion: claudeVersion(), sandboxDir: SANDBOX_DIR, outRoot: OUT_DIR };
+function commonRunFields(strictMcpConfig = false) {
+  return { pluginSha: gitSha(PLUGIN_DIR), claudeVersion: claudeVersion(), sandboxDir: SANDBOX_DIR, outRoot: OUT_DIR, strictMcpConfig };
 }
 
 async function cmdProbe(): Promise<number> {
@@ -146,7 +149,7 @@ async function runBaseline(flags: Flags): Promise<number> {
 
   const context = { ...(await loadContext(CONTEXT_PATH)), ...flags.vars };
   await saveContext(CONTEXT_PATH, context);
-  const common = commonRunFields();
+  const common = commonRunFields(flags.strictMcpConfig);
   const budget = new Budget(MAX_TOTAL_USD);
   const runs: RunSummary[] = [];
   let stoppedReason: string | undefined;
@@ -172,6 +175,7 @@ async function runBaseline(flags: Flags): Promise<number> {
   const aggregates = aggregate(runs);
   const path = await writeResults(RESULTS_DIR, "baseline", {
     kind: "baseline",
+    strictMcpConfig: !!flags.strictMcpConfig,
     createdAt: new Date().toISOString(),
     claudeVersion: common.claudeVersion,
     pluginSha: common.pluginSha,
@@ -192,7 +196,7 @@ function contextTokens(r: RunSummary): number | null {
 async function cmdListingAb(flags: Flags): Promise<number> {
   await mkdir(OUT_DIR, { recursive: true });
   const scenario = await loadScenario(join(SCENARIOS_DIR, "listing-probe.json"));
-  const common = commonRunFields();
+  const common = commonRunFields(flags.strictMcpConfig);
   const root = await mkdtemp(join(tmpdir(), "cost-eval-listing-"));
   const budget = new Budget(MAX_TOTAL_USD);
   const runs: (RunSummary & { variant: string; contextTokens: number | null })[] = [];
@@ -237,6 +241,7 @@ async function cmdListingAb(flags: Flags): Promise<number> {
     };
     const path = await writeResults(RESULTS_DIR, "listing-ab", {
       kind: "listing-ab",
+      strictMcpConfig: !!flags.strictMcpConfig,
       createdAt: new Date().toISOString(),
       claudeVersion: common.claudeVersion,
       pluginSha: common.pluginSha,
@@ -294,6 +299,8 @@ async function cmdCurate(flags: Flags): Promise<number> {
   );
   const notOk = runs.filter((r) => !r.ok).map((r) => r.runId);
   if (notOk.length) throw new Error(`included runs did not pass: ${notOk.join(", ")}`);
+  const mixed = mixedStrictMcp(runs);
+  if (mixed) throw new Error(`${path}: ${mixed}`);
   const aggregates = aggregate(runs);
   const out = await writeResults(RESULTS_DIR, "baseline-final", { curation, aggregates, runs });
   process.stdout.write(`${renderMarkdown(aggregates)}\nWrote ${out}\n`);

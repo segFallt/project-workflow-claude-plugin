@@ -18,8 +18,10 @@ Each run spawns:
 claude -p --input-format stream-json --output-format stream-json --verbose \
   --permission-mode manual --permission-prompt-tool stdio --max-budget-usd <cap> \
   --setting-sources user --settings '{"enabledPlugins":{...:false}}' \
-  --plugin-dir <plugin root> [--model <m>]
+  --plugin-dir <plugin root> [--model <m>] [--strict-mcp-config]
 ```
+
+`--strict-mcp-config` (opt-in, `baseline` and `listing-ab`) loads no MCP servers, so claude.ai account connectors stop adding constant context. Compare runs only with the same setting: each run's `summary.json` and each `baseline`/`listing-ab` results file record it, and `curate` refuses an include list that mixes the two.
 
 The cwd is always outside `/workspace`. Write runs use the sandbox clone; read-only runs use a fresh temp dir, which is deleted afterwards. The runner reads the first `system/init` event. It aborts the run unless exactly one `project-workflows` plugin is loaded, and that plugin's path must be the intended plugin root. Every tool permission arrives as a `can_use_tool` control request. Normal tools are allowed as-is and counted. `AskUserQuestion` gets answers from the scenario's `askAnswers` list.
 
@@ -43,8 +45,8 @@ Run these from the repo root:
 ```sh
 bun .ci/evals/cost/run.ts probe          # one haiku call ($0.10 cap): checks isolation and prints init/plugins/cost
 bun .ci/evals/cost/run.ts seed [--work-item "#73"]   # clone the sandbox and commit sandbox/payload on chore/seed-cost-eval; prints push/MR steps (never pushes)
-bun .ci/evals/cost/run.ts listing-ab [--runs 3] [--model haiku]
-bun .ci/evals/cost/run.ts baseline [--scenario <id>]... [--runs 3] [--model <m>] [--var NAME=value]... [--ci-delay <seconds>]
+bun .ci/evals/cost/run.ts listing-ab [--runs 3] [--model haiku] [--strict-mcp-config]
+bun .ci/evals/cost/run.ts baseline [--scenario <id>]... [--runs 3] [--model <m>] [--var NAME=value]... [--ci-delay <seconds>] [--strict-mcp-config]
 bun .ci/evals/cost/run.ts report [results/baseline-<date>.json]
 bun .ci/evals/cost/run.ts curate curation-<date>.json   # final baseline from hand-validated runs (embeds summaries)
 ```

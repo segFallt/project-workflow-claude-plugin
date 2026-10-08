@@ -27,7 +27,7 @@ export function isolationSettings(plugins = disabledPlugins()): string {
   return JSON.stringify({ enabledPlugins: Object.fromEntries(plugins.map((p) => [p, false])) });
 }
 
-export function buildClaudeArgs(opts: { pluginRoot: string; maxBudgetUsd: number; model?: string }): string[] {
+export function buildClaudeArgs(opts: { pluginRoot: string; maxBudgetUsd: number; model?: string; strictMcpConfig?: boolean }): string[] {
   const args = [
     "claude", "-p",
     "--input-format", "stream-json",
@@ -43,6 +43,8 @@ export function buildClaudeArgs(opts: { pluginRoot: string; maxBudgetUsd: number
     "--plugin-dir", opts.pluginRoot,
   ];
   if (opts.model) args.push("--model", opts.model);
+  // Load no MCP servers (e.g. claude.ai account connectors) so their tool context stays out of the measurement.
+  if (opts.strictMcpConfig) args.push("--strict-mcp-config");
   return args;
 }
 

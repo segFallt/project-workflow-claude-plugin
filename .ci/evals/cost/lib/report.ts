@@ -56,6 +56,18 @@ function modelsBySubagent(runs: RunSummary[]): Record<string, string[]> {
   return Object.fromEntries([...byType].sort(([a], [b]) => a.localeCompare(b)).map(([t, m]) => [t, [...m].sort()]));
 }
 
+/**
+ * Runs measured with and without `--strict-mcp-config` are not comparable.
+ * Returns an error message when the runs mix the two settings (a run recorded
+ * before the flag existed counts as without it), else undefined.
+ */
+export function mixedStrictMcp(runs: { runId: string; strictMcpConfig?: boolean }[]): string | undefined {
+  const strict = runs.filter((r) => r.strictMcpConfig).map((r) => r.runId);
+  if (strict.length === 0 || strict.length === runs.length) return undefined;
+  const loose = runs.filter((r) => !r.strictMcpConfig).map((r) => r.runId);
+  return `runs mix --strict-mcp-config settings (with: ${strict.join(", ")}; without: ${loose.join(", ")})`;
+}
+
 /** Aggregate successful runs per scenario (failed runs are counted, not measured). */
 export function aggregate(runs: RunSummary[]): ScenarioAggregate[] {
   const ids = [...new Set(runs.map((r) => r.scenario))];

@@ -10,6 +10,11 @@ describe("buildClaudeArgs", () => {
     expect(args[args.indexOf("--permission-mode") + 1]).toBe("manual");
     expect(args[args.indexOf("--permission-prompt-tool") + 1]).toBe("stdio");
   });
+
+  test("adds --strict-mcp-config only when asked", () => {
+    expect(buildClaudeArgs({ pluginRoot: "/p", maxBudgetUsd: 1 })).not.toContain("--strict-mcp-config");
+    expect(buildClaudeArgs({ pluginRoot: "/p", maxBudgetUsd: 1, strictMcpConfig: true })).toContain("--strict-mcp-config");
+  });
 });
 
 describe("userSettingsRisk", () => {

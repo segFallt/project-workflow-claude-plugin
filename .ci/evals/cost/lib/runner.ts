@@ -32,6 +32,8 @@ export interface RunOptions {
   model?: string;
   maxBudgetUsd?: number;
   timeoutMs?: number;
+  /** Pass `--strict-mcp-config` so no MCP servers load. */
+  strictMcpConfig?: boolean;
 }
 
 export interface RunSummary {
@@ -44,6 +46,8 @@ export interface RunSummary {
   durationMs: number;
   cwd?: string;
   model?: string;
+  /** Whether the run passed `--strict-mcp-config`; absent in runs recorded before the flag existed. */
+  strictMcpConfig?: boolean;
   claudeVersion: string;
   pluginRoot: string;
   pluginSha: string;
@@ -119,6 +123,7 @@ export async function runScenario(opts: RunOptions): Promise<RunSummary> {
     scenario: s.id,
     runIndex: opts.runIndex,
     ok: false,
+    strictMcpConfig: !!opts.strictMcpConfig,
     startedAt: new Date(started).toISOString(),
     durationMs: 0,
     claudeVersion: opts.claudeVersion,
@@ -146,6 +151,7 @@ export async function runScenario(opts: RunOptions): Promise<RunSummary> {
         pluginRoot,
         maxBudgetUsd: opts.maxBudgetUsd ?? scenario.maxBudgetUsd,
         model: opts.model ?? scenario.model,
+        strictMcpConfig: opts.strictMcpConfig,
       }),
       cwd,
       prompt: scenario.prompt,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aggregate, renderMarkdown, stats } from "./report";
+import { aggregate, mixedStrictMcp, renderMarkdown, stats } from "./report";
 import type { RunSummary } from "./runner";
 
 const tokens = (input: number, sub: number) => ({
@@ -54,5 +54,18 @@ describe("sub-agent models", () => {
     const [a] = aggregate([withSubs([])]);
     expect(a.subagentModels).toEqual({});
     expect(renderMarkdown([a])).toMatch(/\| – \|$/);
+  });
+});
+
+describe("mixedStrictMcp", () => {
+  test("accepts runs that share one setting", () => {
+    expect(mixedStrictMcp([{ runId: "a", strictMcpConfig: true }, { runId: "b", strictMcpConfig: true }])).toBeUndefined();
+    expect(mixedStrictMcp([{ runId: "a" }, { runId: "b", strictMcpConfig: false }])).toBeUndefined();
+  });
+
+  test("names both sides when runs mix settings", () => {
+    const msg = mixedStrictMcp([{ runId: "a", strictMcpConfig: true }, { runId: "b" }]);
+    expect(msg).toContain("with: a");
+    expect(msg).toContain("without: b");
   });
 });
