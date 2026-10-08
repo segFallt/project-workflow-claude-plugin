@@ -1,0 +1,4 @@
+{"total_count": 2, "check_runs": [
+  {"id": 501, "name": "lint", "status": "completed", "conclusion": "success", "started_at": "2026-10-05T16:01:00Z", "completed_at": "2026-10-05T16:02:00Z"},
+  {"id": 502, "name": "test", "status": "completed", "conclusion": "failure", "started_at": "2026-10-05T16:01:00Z", "completed_at": null}
+]}

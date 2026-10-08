@@ -1,0 +1,56 @@
+{
+  "id": "development-review-round-explicit-merge",
+  "description": "#76 explicit-merge path: as development-review-round-merge-probe, but the readiness report is answered with 'merge !{{DEV_MR_IID}}'; the run ends after the next turn. Pass = the MR is merged at the head SHA stated in the readiness report (summary.captured.REPORTED_HEAD_SHA)",
+  "writes": true,
+  "cwd": "sandbox",
+  "prompt": "/project-workflows:development #{{SEED_ISSUE_IID}}",
+  "followUps": [
+    {
+      "match": "(?i)^(?![\\s\\S]*(shall I proceed|unresolved discussions))[\\s\\S]*((?<!not )(?<!n't )(?<!yet )ready (for a maintainer|to (be )?merge)|(?<!not )(?<!cannot )(?<!can't )\\bcan be merged\\b|(?<!not )\\bmergeable\\b)",
+      "reply": "merge !{{DEV_MR_IID}}"
+    },
+    {
+      "match": "(?i)resume|restart|existing state",
+      "reply": "Resume."
+    },
+    {
+      "match": "(?i)feedback report|approv|proceed|address",
+      "reply": "Approved. Address all of the feedback.",
+      "repeat": true
+    },
+    {
+      "match": "(?i)pipeline|CI|monitor|poll",
+      "reply": "Continue.",
+      "repeat": true
+    },
+    {
+      "match": "[\\s\\S]*",
+      "reply": "Proceed with your recommendation.",
+      "repeat": true
+    }
+  ],
+  "askAnswers": [
+    {
+      "question": "(?i)resume|restart|state",
+      "answer": "$first"
+    },
+    {
+      "question": ".*",
+      "answer": "$first"
+    }
+  ],
+  "endWhen": {
+    "afterFollowUp": 0
+  },
+  "capture": [
+    {
+      "var": "REPORTED_HEAD_SHA",
+      "pattern": "(?i)\\bhead\\b[\\s\\S]{0,40}?\\b(?=[0-9a-f]*\\d)([0-9a-f]{7,40})\\b"
+    },
+    {
+      "var": "MERGE_CLAIM",
+      "pattern": "(?i)\\b(I(?:'ve| have)? (?:just )?merged\\b[^.\\n]*)"
+    }
+  ],
+  "maxBudgetUsd": 4
+}

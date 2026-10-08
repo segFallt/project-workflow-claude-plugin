@@ -63,7 +63,7 @@ Store `GIT_USER_NAME` and `GIT_USER_EMAIL` in shell variables for the session.
 
 ### Step 3: Build Authenticated Push URL
 
-Build a token-authenticated URL for push operations. This URL is stored in a shell variable — it is NOT written to any git config or remote definition.
+Build a token-authenticated URL for push operations. It lives only in a shell variable — it is NOT written to any git config or remote definition — and is **defined in the same command as the push** (see Pushing below), never in an earlier Bash call, so each push states its target.
 
 **GitLab:**
 ```bash
@@ -90,9 +90,9 @@ git -C <WORKTREE_PATH> \
   commit -m "{message}"
 ```
 
-**Pushing** — use the push URL variable directly (no `remote set-url`):
+**Pushing** — one command that defines the push URL (Step 3, for your host) and pushes with it (no `remote set-url`):
 ```bash
-git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
+PUSH_URL="https://oauth2:$<API_TOKEN_ENV_VAR>@<HOST>/<GROUP>/<REPO>.git" && git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
 ```
 
 > Do not add `-u`/`--set-upstream`: with a URL it persists the token-bearing push URL into `.git/config` in plaintext.
@@ -114,6 +114,6 @@ git -C <REPO_LOCAL_PATH> worktree prune
 When delegating to sub-agents, pass these values:
 - `<WORKTREE_PATH>` — the sub-agent's working directory
 - `GIT_USER_NAME` and `GIT_USER_EMAIL` — for commits
-- `PUSH_URL` — only if the sub-agent needs to push (most do not)
+- The push URL form (Step 3) — only if the sub-agent needs to push (most do not); it must define `PUSH_URL` in the push command itself
 
 Sub-agents should NOT create worktrees, modify git config, or run `git fetch`. The orchestrator handles all of this.

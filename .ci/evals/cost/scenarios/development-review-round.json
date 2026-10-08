@@ -1,0 +1,45 @@
+{
+  "id": "development-review-round",
+  "description": "resume the development skill on a sandbox issue whose MR has review feedback; one Phase 6 round (feedback report, review-feedback sub-agent, push, reply/resolve) until it returns to watching for review (text, or mid-turn when a cr-activity poll-script wait starts after a reply/resolve)",
+  "writes": true,
+  "cwd": "sandbox",
+  "prompt": "/project-workflows:development #{{SEED_ISSUE_IID}}",
+  "followUps": [
+    {
+      "match": "(?i)resume|restart|existing state",
+      "reply": "Resume."
+    },
+    {
+      "match": "(?i)feedback report|approv|proceed|address",
+      "reply": "Approved. Address all of the feedback.",
+      "repeat": true
+    },
+    {
+      "match": "(?i)pipeline|CI|monitor|poll",
+      "reply": "Continue. Do not merge, close, or approve any merge request.",
+      "repeat": true
+    },
+    {
+      "match": "[\\s\\S]*",
+      "reply": "Proceed with your recommendation. Do not merge, close, or approve any merge request.",
+      "repeat": true
+    }
+  ],
+  "askAnswers": [
+    {
+      "question": "(?i)resume|restart|state",
+      "answer": "$first"
+    },
+    {
+      "question": ".*",
+      "answer": "$first"
+    }
+  ],
+  "endWhen": {
+    "assistantMatches": "(?i)(resolved|replied)[\\s\\S]{0,3000}(watching for review|wait(ing)? for review|monitoring (for )?review|review[- ]feedback (loop|monitoring)|background (check|poll)|poller keeps running)",
+    "maxTurns": 12,
+    "toolCommandMatches": "poll-until-change\\.py\\b[\\s\\S]*--watch[ =]cr-activity",
+    "toolCommandAfter": "discussions/[^\\s\"'?/]+/notes|\"resolved\"\\s*:\\s*true|resolved=true"
+  },
+  "maxBudgetUsd": 10
+}

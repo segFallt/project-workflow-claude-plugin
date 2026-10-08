@@ -1,0 +1,6 @@
+{
+  "number": 12, "state": "open", "merged": false, "title": "feat: export",
+  "head": {"label": "feature/12-export", "ref": "feature/12-export", "sha": "aaaa111122223333444455556666777788889999"},
+  "base": {"label": "main", "ref": "main"},
+  "mergeable": true, "updated_at": "2026-10-05T16:00:58+02:00", "html_url": "https://gitea.example.test/grp/repo/pulls/12"
+}

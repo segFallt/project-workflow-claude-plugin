@@ -1,6 +1,7 @@
 ---
 name: code-review
 description: Use when reviewing open change requests across a project's repositories
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/poll-until-change.py *)
 ---
 
 # Automated CR Reviewer
@@ -9,7 +10,7 @@ description: Use when reviewing open change requests across a project's reposito
 
 You are an **automated code reviewer**. Your job is to monitor open change requests across the configured group/org (see `PROJECT.md § Source Control`), review each one against the project's review standards, and either **approve** or **leave actionable feedback**.
 
-You are a **coordinator**. You do NOT read diffs yourself. For each CR that needs review, you delegate to a sub-agent with the full diff and the review standards, then post the sub-agent's findings.
+You are a **coordinator**. You do NOT read diffs yourself. For each CR that needs review, you delegate to a sub-agent with the full diff and the review standards, then post the sub-agent's findings. Each dispatch passes `model` per `../../shared/model-tiering.md`.
 
 **Success criteria for each cycle:**
 - Every open, non-draft CR in scope has been reviewed or skipped (with reason)
@@ -31,6 +32,7 @@ Before running this skill, ensure the following are in place:
 | Env var | `API_TOKEN_ENV_VAR` | Fallback personal access token — used only when `REVIEW_TOKEN_ENV_VAR` is not configured |
 | Tool | `curl` | Required for all API calls |
 | Tool | `git` | Required for repo operations |
+| Tool | `python3` | Runs the bundled poll script for the Phase 2 wait. For unattended loops, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings (the skill's pre-approval ends at your next message) |
 
 ---
 
@@ -61,8 +63,9 @@ source <ENV_FILE_PATH>
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
-All API calls in this skill use the following **standardized operation names**. Look up each operation in the invoked API skill for the exact curl command.
+All API calls in this skill use the following **standardized operation names**. Read each operation's exact curl command per `shared/api-dispatch.md`.
 
 **Operations used by this skill:**
 - `LIST_OPEN_CRS` — list open change requests in the group/org
@@ -84,8 +87,8 @@ All API calls in this skill use the following **standardized operation names**. 
 
 This skill operates in two phases:
 
-- **Phase 1: Initial Review Sweep** — one pass through all open CRs. Use the **`/loop` skill** to discover new CRs periodically (e.g., `/loop 2m /cr-review`). The loop handles finding *new* CRs; Phase 2 handles tracking CRs that already received feedback.
-- **Phase 2: Feedback Monitoring Loop** — after the sweep, actively polls any CR that received `request_changes` until it is merged, closed, or approved.
+- **Phase 1: Initial Review Sweep** — one pass through all open CRs. Use the **`/loop` skill** to discover new CRs periodically (e.g., `/loop 2m /project-workflows:code-review`). The loop handles finding *new* CRs; Phase 2 handles tracking CRs that already received feedback.
+- **Phase 2: Feedback Monitoring Loop** — after the sweep, waits on the poll script for activity on any CR that received `request_changes` until it is merged, closed, or approved.
 
 **Activity-detection rule (referenced by both phases):** Relative to a **baseline timestamp**, a CR has new activity if EITHER (a) the CR's `updated_at` is newer than the baseline (code was pushed or metadata changed), OR (b) a comment — not authored by the review bot (this skill's own `<!-- claude-review -->` output) — has `created_at` after the baseline; in **Phase 2**, a non-bot discussion reply counts as well. The baseline differs by phase: **Phase 1** uses the `created_at` of the most recent comment containing the `<!-- claude-review -->` marker (found via `GET_CR_COMMENTS`, paginated through all pages) — it evaluates comments only, not discussions; **Phase 2** uses the tracked CR's `last_review_at`. If there is new activity → re-review; otherwise → skip (already reviewed).
 
@@ -96,7 +99,7 @@ rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
 
 ### Phase 1: Initial Review Sweep
 
-> **Note on `/loop` integration:** When this skill is invoked via `/loop` (e.g., `/loop 2m /cr-review`), each invocation runs Phase 1 (one sweep) and then Phase 2 (monitor until tracking list is empty). The `/loop` skill handles re-invoking the entire cycle at the specified interval to discover new CRs. You do NOT need to loop Phase 1 yourself — but you MUST complete Phase 2's monitoring loop fully before the invocation ends.
+> **Note on `/loop` integration:** When this skill is invoked via `/loop` (e.g., `/loop 2m /project-workflows:code-review`), each invocation runs Phase 1 (one sweep) and then Phase 2, which blocks in poll-script chunks until the tracking list is empty — so the next `/loop` sweep starts only after Phase 2 ends. You do NOT need to loop Phase 1 yourself — but you MUST complete Phase 2's monitoring loop fully before the invocation ends.
 
 0. **Hydrate tracking list from state file** — before sweeping, check if a state file exists:
    - Resolve `<PRIMARY_REPO_LOCAL_PATH>` as the `local_path` of the first repo in `PROJECT.md § Repository Dependency Order`
@@ -135,34 +138,34 @@ rm -f "<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json"
 
 After the sweep, monitor all CRs in the tracking list until each is resolved. The Phase 1 dedup logic (`<!-- claude-review -->` marker check) applies only to the sweep; Phase 2 uses `last_review_at` timestamps for activity detection.
 
-**State reconcile (top of every iteration):** At the start of each poll iteration (`<PRIMARY_REPO_LOCAL_PATH>` resolved as in step 0 above):
+**State reconcile (every chunk exit):** Each poll-script chunk is one poll iteration. When it exits (`<PRIMARY_REPO_LOCAL_PATH>` resolved as in step 0 above):
 1. Read `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/code-review/tracking.json` via Python 3
 2. Reconcile `tracked_crs` — add any CRs present in the file but not in memory; remove from memory any CRs not in the file
 3. Update `updated_at` = now and write the state file atomically
 4. If the file does not exist, write the current in-memory `tracked_crs` to disk immediately
 
-1. **Poll every 90 seconds** — for each tracked CR:
+1. **Wait for activity** — one call per `../../shared/poll-wait.md` for the whole tracking list: `--watch cr-activity --ignore-self`, one `--cr <project_id>:<cr_id>` per tracked CR, `--token-env` = the token selected above, and `--fingerprint` = the tracked CRs' `last_fingerprint` values, comma-joined. If the token fell back to `API_TOKEN_ENV_VAR`, tell the user once: replies by that account will not wake the loop, only pushes and state changes. On exit `2`, re-invoke. On exit `0`, store each target's `fingerprint` entry in that CR's `last_fingerprint`, then for each CR in `changed`:
    a. Fetch CR details via `GET_CR`
    b. **If `state` is `merged`:** Log the merge, remove from tracking list, and **persist the tracking list** (see the Tracking-list persistence rule above — deletes the state file if `tracked_crs` becomes empty)
    c. **If `state` is `closed`:** Log the closure, remove from tracking list, and **persist the tracking list** (per the Tracking-list persistence rule above)
-   d. **If the CR has merge conflicts** (check the conflict field per the API skill's Field Reference): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
+   d. **If the CR has merge conflicts** (check the conflict field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`): Post a conflicts note if one does not already exist: "⚠️ This CR has merge conflicts. Please resolve before re-review." Skip re-review this iteration
 
-2. **Detect author activity** — apply the **Activity-detection rule** (above) with the Phase 2 baseline (`last_review_at`).
+2. **Detect author activity** on each changed CR — apply the **Activity-detection rule** (above) with the Phase 2 baseline (`last_review_at`).
 
-3. **If no new activity on any tracked CR:** Wait 90 seconds. Return to step 1.
+3. **If no new activity on any changed CR:** Return to step 1.
 
 4. **If new activity is detected on a CR:**
    a. Increment `review_round`
    b. **If `review_round` > 5:** Post a comment: "This CR has been through {review_round} review rounds. Stepping back to avoid noise — please request a re-review when ready." Remove from tracking list and **persist the tracking list** (per the Tracking-list persistence rule above). Continue loop for remaining CRs.
    c. Fetch CR changes (full diff) via `GET_CR_DIFF` (paginate through all pages)
    d. Fetch linked issues via `GET_CR_LINKED_ISSUES`
-   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the host-API `§ Pagination`, read per `shared/api-dispatch.md`). Pass the complete discussion set to the sub-agent so it understands what was previously flagged and how the author responded. Do not stop at the first page — incomplete data will cause review threads to be silently missed.
    f. **Delegate to the Re-Review Sub-Agent** — read `./sub-agents/re-review.md` and dispatch via the Agent tool
    g. **Post updated findings and manage inline threads:**
       - Post the summary comment via `POST_CR_COMMENT` (include round number, see `./templates/comment-formatting.md`)
       - Post inline comments per the **Inline Comments** section in `./templates/comment-formatting.md`
       - For each discussion ID in `threads_to_resolve` from the sub-agent output, call `RESOLVE_CR_THREAD` to mark it as resolved (the prior issue has been fixed by the author). Skip the resolve where the host lacks the endpoint (Gitea below 1.26 — see the capability-gating note below); never error
-      - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api skill), post a new inline comment instead
+      - For each `{discussion_id, reply_text}` in `threads_to_reply`, call `REPLY_TO_CR_THREAD` on the mapped thread instead of posting a duplicate inline comment. Fallbacks (never error): if the finding no longer maps to a prior thread because the line has moved, post a new inline comment via `POST_CR_INLINE_COMMENT`; if the host lacks a threaded-reply endpoint (GitLab/GitHub always have one; Gitea only on 1.27+ — see the gitea-api SKILL.md `§ REPLY_TO_CR_THREAD`), post a new inline comment instead
    h. **Approve or revoke** based on new verdict:
       - If verdict is `approve` → call `APPROVE_CR`; remove from tracking list and **persist the tracking list** (per the Tracking-list persistence rule above)
       - If verdict is `request_changes` → call `UNAPPROVE_CR`; update `last_review_at` = now; continue tracking
@@ -186,8 +189,8 @@ Skip a CR (do not review) if any of the following are true:
 |-----------|---------------|
 | Draft / WIP | `draft == true` OR title starts with `WIP:` or `Draft:` |
 | Already reviewed (no new activity) | `<!-- claude-review -->` marker found in comments AND `updated_at` ≤ review comment `created_at` AND no non-bot comments created after the review comment |
-| Zero changes | CR has zero changed files (check the changes/files field per the API skill's Field Reference) |
-| Merge conflicts | CR has merge conflicts (check the conflict field per the API skill's Field Reference) — leave a short note: "⚠️ This CR has merge conflicts. Please resolve before review." (only if no such note exists yet) |
+| Zero changes | CR has zero changed files (check the changes/files field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`) |
+| Merge conflicts | CR has merge conflicts (check the conflict field per the host-API `§ Field Reference`, read per `shared/api-dispatch.md`) — leave a short note: "⚠️ This CR has merge conflicts. Please resolve before review." (only if no such note exists yet) |
 
 ---
 

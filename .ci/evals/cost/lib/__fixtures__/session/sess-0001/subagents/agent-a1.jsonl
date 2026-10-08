@@ -1,0 +1,2 @@
+{"type":"assistant","requestId":"req_S1","message":{"id":"msg_S1","model":"claude-haiku-test","role":"assistant","content":[{"type":"text","text":"sub"}],"usage":{"input_tokens":7,"output_tokens":3,"cache_creation_input_tokens":100,"cache_read_input_tokens":0}}}
+{"type":"assistant","requestId":"req_S2","message":{"model":"claude-haiku-test","role":"assistant","content":[{"type":"text","text":"no id, falls back to requestId"}],"usage":{"input_tokens":1,"output_tokens":2,"cache_creation_input_tokens":0,"cache_read_input_tokens":100}}}

@@ -8,7 +8,7 @@ This sub-agent is dispatched by the `development` skill orchestrator during Phas
 
 ## Prompt Template
 
-Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values:
+Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values, and pass `model` resolved for key `review-feedback` per `shared/model-tiering.md` (omit when it resolves to `inherit`):
 
 ```
 You are a developer addressing code review feedback for the project described in `.claude/project-config/PROJECT.md`.

@@ -1,6 +1,7 @@
 ---
 name: development
 description: Use when implementing a feature, bug fix, or task from an issue
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/poll-until-change.py *)
 ---
 
 # Architect & Developer
@@ -11,7 +12,9 @@ You are an **architect and developer** for the project described in `.claude/pro
 
 You are a **coordinator**. You delegate code writing and test authoring to sub-agents. You handle issue parsing, architecture decisions, repository host API calls, branch management, CI monitoring, and all user interaction directly.
 
-**Success criteria:** the user confirms your understanding of the issue; the user approves the solution design before any code is written; implementation follows `PROJECT.md` conventions; repo-specific lint and tests pass before the CR is created; the CR description includes `Closes #{issue_id}` (`{issue_id}` = `iid` on GitLab, `number` on GitHub/Gitea — see your repo-host skill's Field Reference); CI passes with failures diagnosed and fixed; the issue's acceptance criteria are met and documented in the CR; review feedback is addressed iteratively until the CR is approved and merged.
+**Success criteria:** the user confirms your understanding of the issue; the user approves the solution design before any code is written; implementation follows `PROJECT.md` conventions; repo-specific lint and tests pass before the CR is created; the CR description includes `Closes #{issue_id}` (`{issue_id}` = `iid` on GitLab, `number` on GitHub/Gitea — see the host-API `§ Field Reference`, read per `shared/api-dispatch.md`); CI passes with failures diagnosed and fixed; the issue's acceptance criteria are met and documented in the CR; review feedback is addressed iteratively until the CR is approved and merged — by a maintainer, unless the user explicitly instructs you to merge it.
+
+**Merging:** never propose a merge or list merging as an option. A generic or catch-all reply ("proceed", "go ahead", "do what you recommend") and your own recommendation are never consent to merge. Call `MERGE_CR` only on an explicit, unambiguous user instruction to merge this CR (e.g. "merge {cr_reference}"), given in reply to a readiness report (Phase 6, step 3). Never approve CRs; approval belongs to `code-review`.
 
 ---
 
@@ -21,6 +24,7 @@ You are a **coordinator**. You delegate code writing and test authoring to sub-a
 - **`.claude/project-config/STANDARDS.md`** — optional; shared engineering standards actively applied as implementation requirements and in the design document (every row; `Severity` ignored). Absent → skip gracefully
 - **`API_TOKEN_ENV_VAR`** — repository-host personal access token, sourced from `<ENV_FILE_PATH>`; never use the project owner's personal credentials directly
 - **`curl`** and **`git`** — required for API calls and repo/git operations
+- **`python3`** — runs the bundled CI/review poll script. For unattended loops, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings; the skill's own pre-approval lasts only until your next message
 
 ---
 
@@ -33,11 +37,14 @@ Read `../../shared/environment-setup.md`, `../../shared/trunk-branch.md`, and `.
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `GET_ISSUE` — get issue details
+- `LIST_ISSUE_COMMENTS` — list an issue's comments (prior discussion and decisions)
 - `POST_ISSUE_COMMENT` — post a comment on an issue (e.g., "implementation underway in {cr_reference}")
 - `SEARCH_BRANCHES` — search/list branches to find existing branches for an issue
+- `LIST_OPEN_CRS` — list open change requests (to find an existing CR for a branch on resume)
 - `CREATE_CR` — create a new change request
 - `GET_CR_PIPELINES` — get CI pipeline/check status for a CR
 - `GET_PIPELINE_JOBS` — list jobs in a pipeline
@@ -48,6 +55,7 @@ Read `../../shared/api-dispatch.md`.
 - `REPLY_TO_CR_THREAD` — reply to a discussion thread (e.g., acknowledging reviewer feedback)
 - `RESOLVE_CR_THREAD` — mark a discussion thread as resolved after addressing feedback
 - `CLOSE_ISSUE` — close the original issue once the CR is merged
+- `MERGE_CR` — merge the CR; only on explicit user instruction (see Role & Objective)
 
 ---
 
@@ -59,7 +67,7 @@ Read `../../shared/api-dispatch.md`.
    - A full URL: `{host_url}/{group}/{repo}/issues/{iid}`
    - A short reference: `<repo-name>#42` or just `#42` with the repo implicit from context
 2. **Fetch the issue** via `GET_ISSUE`
-3. **Fetch issue comments** to capture any prior discussion or decisions
+3. **Fetch issue comments** via `LIST_ISSUE_COMMENTS` to capture any prior discussion or decisions
 4. **Scan for existing state file** — after fetching the issue, read `../../shared/state-tracking.md` for the full state pattern, then:
    - Scan all files in `<PRIMARY_REPO_LOCAL_PATH>/.state-tracking/development/` (if the directory exists)
    - For each `.json` file found, read it via Python 3 and check if `issue.id` matches the current issue's ID
@@ -133,13 +141,13 @@ git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
 ### Phase 4: Change Request Creation
 
 **On resume with `phase=4`:** Check if a CR already exists for the branch:
-- Call `GET_CR` / list open CRs filtered by branch name
+- List open CRs via `LIST_OPEN_CRS` and match the CR whose source branch is the issue branch
 - If a CR exists: populate `cr.*` fields in the state file, set `phase=5`, and jump to Phase 5
 - If no CR exists: proceed with CR creation below
 
-1. **Push the branch** using the authenticated push URL from worktree setup (see `../../shared/worktree-setup.md`). Do NOT use `git push origin` — use `$PUSH_URL` to avoid modifying remote config:
+1. **Push the branch** with the single-command form from `../../shared/worktree-setup.md` (`PUSH_URL` defined in the same command as the push). Do NOT use `git push origin`:
    ```bash
-   git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
+   PUSH_URL="<push URL per worktree-setup Step 3>" && git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
    ```
 2. **Create the CR** via `CREATE_CR` using the CR Description template (`./templates/cr-description.md`)
 
@@ -154,35 +162,36 @@ git -C <WORKTREE_PATH> log --oneline --after="<created_at>"
 
 ### Polling Loop Mechanics (Phases 5–6)
 
-Phases 5 and 6 each run a polling loop governed by the two rules below. Each phase names its loop and enumerates its own exit conditions; these shared rules apply to both.
+Phases 5 and 6 each run a polling loop governed by the two rules below. Each phase names its loop and enumerates its own exit conditions; these shared rules apply to both. Waiting is done by the poll script per `../../shared/poll-wait.md`: **one script chunk (one Bash call, up to 540 s) is one poll iteration.**
 
 #### Loop exit directive
 
-**DO NOT EXIT THE LOOP EARLY.** Keep polling until one of the loop's enumerated exit conditions (listed in the phase) is met. A poll that shows "no change since last poll", "no new feedback", or "one cycle completed with no activity" is **NOT** an exit condition — the work is still in progress; continue polling. If you do exit, you MUST announce: "Exiting {loop name} because: {reason}."
+**DO NOT EXIT THE LOOP EARLY.** Keep polling until one of the loop's enumerated exit conditions (listed in the phase) is met. A chunk that ends with no change (exit `2`), "no new feedback", or "one cycle completed with no activity" is **NOT** an exit condition — the work is still in progress; continue polling. If you do exit, you MUST announce: "Exiting {loop name} because: {reason}."
 
-#### State reconcile (top of every poll iteration)
+#### State reconcile (every chunk exit)
 
-At the start of each poll iteration: read the state file, reconcile the loop's pointers from it, update `loop.last_poll_at` = now (see the per-phase note for how the `loop` object itself is handled), and write the file using the atomic write pattern. Do **NOT** change the `phase` field during mid-loop reconciliation. The specific pointers to reconcile are listed per phase.
+When each script chunk exits: read the state file, reconcile the loop's pointers from it, set `loop.last_poll_at` = now and the phase's fingerprint field (`loop.last_fingerprint_pipeline` in Phase 5, `loop.last_fingerprint_activity` in Phase 6) = the printed `fingerprint`, and write the file using the atomic write pattern. On resume, pass that field as `--fingerprint`. Do **NOT** change the `phase` field during mid-loop reconciliation. The specific pointers to reconcile are listed per phase.
 
 ### Phase 5: CI Pipeline Monitoring & Fixes
 
 > **⚠️ LOOP DIRECTIVE** — governed by the **Loop exit directive** above; loop name: **"CI polling loop"**. Keep polling until the pipeline reaches a terminal state (`success` or `failed`) or exceeds the stuck threshold. The ONLY permitted exit conditions are:
 > 1. Pipeline status is `success` → proceed to Phase 6
 > 2. Pipeline status is `failed` → diagnose, fix, push, and resume polling
-> 3. Pipeline has been `running` for > 20 minutes → report to user and wait for guidance
+> 3. Pipeline status is `skipped` → tell the user CI produced no result and wait for guidance (not a failure)
+> 4. The 20-minute wait budget is spent without a terminal status → report to user and wait for guidance
 
-**State reconcile:** Per the **State reconcile** rule above — reconcile `cr.*` and `worktrees` from the file; if `loop` is present, update `loop.last_poll_at` = now; if `loop` is absent, write `loop` as `null` (Phase 6 will initialize it).
+**State reconcile:** Per the **State reconcile** rule above — reconcile `cr.*` and `worktrees` from the file; if `loop` is absent, create it with only `last_fingerprint_pipeline` and `last_poll_at` (Phase 6 initializes the rest).
 
-1. **Poll pipeline status** — check `GET_CR_PIPELINES` every 60 seconds until status is `success` or `failed`
+1. **Wait for the pipeline** — per `../../shared/poll-wait.md` with `--watch pipeline --cr <cr.project_id>:<cr.iid>`, from `loop.last_fingerprint_pipeline` if set. Budget: 20 minutes (sum of `elapsed_s`) without a terminal status; pass `--max-wait` = min(540, seconds left in the budget). Read `status` from the summary: `none`, or a `sha` that is not the head you pushed, means the new pipeline has not started — treat it as `running`; treat `canceled` as `failed`; on `skipped`, tell the user and wait for guidance.
 2. **On pipeline failure:**
    a. Fetch job list to identify the failed job
    b. Fetch job log trace and read the tail (last 100 lines) for the error
    c. Diagnose the root cause
    d. Present diagnosis and proposed fix to the user; wait for approval
    e. Read `./sub-agents/implementation.md` and dispatch via the Agent tool to fix the failure
-   f. Commit and push the fix; resume polling from step 1
-3. **On pipeline still running:** Wait 60 seconds. Return to step 1. Do NOT exit.
-4. **On pipeline stuck (running > 20 minutes):** Handle per **Error Handling** ("CI stuck") — then wait for the user's guidance
+   f. Commit and push the fix; return to step 1 with a fresh budget, keeping the last fingerprint (the new pipeline wakes the wait)
+3. **On pipeline still running** (exit `0` with `terminal: false`, or exit `2` within budget): return to step 1. Do NOT exit.
+4. **On pipeline stuck** (exit `2` with the budget spent): Handle per **Error Handling** ("CI stuck") — then wait for the user's guidance
 5. **On pipeline success:** Confirm to the user that the pipeline is green and that you are entering review feedback monitoring, then proceed to Phase 6 (Code Review Feedback Loop). Report status using `./templates/pipeline-status.md`.
 
 ### Phase 6: Code Review Feedback Loop
@@ -196,19 +205,22 @@ At the start of each poll iteration: read the state file, reconcile the loop's p
    - **If entering Phase 6 for the first time** (no state file or `loop.review_round` is absent): set `last_checked_at` = now, `review_round` = 0, `max_review_rounds` = 5; update state file with `phase=6`
    - **On resume (state file has `phase=6`):** restore `last_checked_at`, `review_round`, `max_review_rounds`, and `skipped_items[]` from the state file — do not reset them
 
-2. **Poll every 90 seconds:**
-   **State reconcile:** Per the **State reconcile** rule above — reconcile `loop.*`, `cr.*`, `worktrees`, and `skipped_items[]`, and update `loop.last_poll_at` = now.
+2. **Wait for activity** — per `../../shared/poll-wait.md` with `--watch cr-activity --cr <cr.project_id>:<cr.iid> --ignore-self`, from `loop.last_fingerprint_activity` if set; no budget.
+   **State reconcile:** Per the **State reconcile** rule above — reconcile `loop.*`, `cr.*`, `worktrees`, and `skipped_items[]`. On exit `2`, re-invoke; on exit `0`:
    a. Fetch CR details via `GET_CR`
    b. **If `state` is `merged`:** Notify the user. Proceed to Phase 7.
    c. **If `state` is `closed`:** Notify the user that the CR was closed unexpectedly. Proceed to Phase 7.
    d. **If conflicts detected:** Handle per **Error Handling** ("CR has conflicts after review fix push"); wait for guidance before continuing.
-   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the Pagination section in your repo-host API skill). Do not stop at the first page. Incomplete discussion data will cause review threads to be silently missed.
+   e. Fetch **all** discussions via `GET_CR_DISCUSSIONS` — you MUST paginate through every page of results (see the host-API `§ Pagination`, read per `shared/api-dispatch.md`). Do not stop at the first page. Incomplete discussion data will cause review threads to be silently missed.
    f. **Identify new actionable feedback** — filter discussions where:
       - At least one note in the thread was created or updated after `last_checked_at`, OR no bot reply exists on the thread yet
       - Author is not the bot/agent (exclude notes you have posted yourself)
       - Group threads by `position.new_path` where available
 
-3. **If no new actionable feedback:** Update `last_checked_at` = now. Wait 90 seconds. Return to step 2.
+3. **If no new actionable feedback:** Update `last_checked_at` = now; `review_round` is unchanged.
+   - **If no threads are open** (nothing left to address), the head differs from `cr.reported_head_sha` (or it is unset), and the latest pipeline for that head succeeded (`GET_CR_PIPELINES`): give a readiness report — the CR is **ready for a maintainer to merge** at head `{head_sha}`, taken from this poll's `GET_CR` (GitLab `diff_refs.head_sha`/`sha`; GitHub/Gitea `head.sha`) — and write that SHA to `cr.reported_head_sha`. Never offer to merge; keep polling for a terminal state.
+   - **If the user explicitly instructs you to merge this CR** (see Role & Objective): read `./references/explicit-merge.md` and follow it.
+   - Return to step 2.
 
 4. **If new actionable feedback is found:**
    a. Increment `review_round`. Write the state file with the updated `review_round`.
@@ -229,7 +241,7 @@ At the start of each poll iteration: read the state file, reconcile the loop's p
       ```
    h. Push the changes using the authenticated push URL from worktree setup:
       ```bash
-      git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
+      PUSH_URL="<push URL per worktree-setup Step 3>" && git -C <WORKTREE_PATH> push "$PUSH_URL" {branch_name}
       ```
    i. For each discussion in `changes_made` from the sub-agent output:
       - Post a reply via `REPLY_TO_CR_THREAD` with the sub-agent's `reply_text`
@@ -297,9 +309,9 @@ Use lowercase, hyphens only, no special characters. Keep `{short-description}` t
 | Documentation authoring (`doc-authoring` sub-agent) | |
 | Test writing | Branch creation and git operations |
 | Config file changes | Lint and test execution after implementation |
-| Proto definition changes | CI pipeline monitoring |
+| Proto definition changes | CI pipeline monitoring (via the poll script) |
 | Design-doc-driven refactors | Log analysis and failure diagnosis |
-| Code review feedback fixes | Review feedback polling and discussion management |
+| Code review feedback fixes | Review feedback waiting (via the poll script) and discussion management |
 | | Discussion resolution (reply + resolve API calls) |
 | | User interaction and design decisions |
 | | Deriving test cases from the issue's acceptance criteria |
@@ -308,15 +320,15 @@ Use lowercase, hyphens only, no special characters. Keep `{short-description}` t
 
 ### Sub-Agent Reference
 
-Each sub-agent is dispatched the same way: **read its prompt file and dispatch via the Agent tool, substituting all `{placeholder}` values defined in that file.** The dispatch instructions are also given inline at the phase steps below.
+Each sub-agent is dispatched the same way: **read its prompt file and dispatch via the Agent tool, substituting all `{placeholder}` values defined in that file, with `model` resolved for its Tier key per `../../shared/model-tiering.md`.** The dispatch instructions are also given inline at the phase steps below; the same `model` rule applies there.
 
-| Sub-agent | Prompt path | Dispatched at | Returns |
-|-----------|-------------|---------------|---------|
-| Code exploration | `../../shared/sub-agents/code-exploration.md` (substitute `{purpose}` = `"design"`) | Phase 2, step 1 | `files_to_modify`, `files_to_create`, `tests_to_update`, `reference_patterns`, `dependencies`, `risk_areas` |
-| Implementation | `./sub-agents/implementation.md` | Phase 3, step 3 (per logical unit); Phase 5, step 2e (non-trivial CI fixes) | — |
-| Test writing | `./sub-agents/test-writing.md` | Phase 3, step 5 | — |
-| Review feedback | `./sub-agents/review-feedback.md` | Phase 6, step 4e | `changes_made`, `skipped`, `lint_result`, `test_result` |
-| Doc authoring | `../../shared/sub-agents/doc-authoring.md` | Requirements Documentation step | Registration entries for the authored/updated documents |
+| Sub-agent | Prompt path | Tier key | Dispatched at | Returns |
+|-----------|-------------|----------|---------------|---------|
+| Code exploration | `../../shared/sub-agents/code-exploration.md` (substitute `{purpose}` = `"design"`) | `code-exploration` | Phase 2, step 1 | `files_to_modify`, `files_to_create`, `tests_to_update`, `reference_patterns`, `dependencies`, `risk_areas` |
+| Implementation | `./sub-agents/implementation.md` | `implementation` | Phase 3, step 3 (per logical unit); Phase 5, step 2e (non-trivial CI fixes) | — |
+| Test writing | `./sub-agents/test-writing.md` | `test-writing` | Phase 3, step 5 | — |
+| Review feedback | `./sub-agents/review-feedback.md` | `review-feedback` | Phase 6, step 4e | `changes_made`, `skipped`, `lint_result`, `test_result` |
+| Doc authoring | `../../shared/sub-agents/doc-authoring.md` | `doc-authoring` | Requirements Documentation step | Registration entries for the authored/updated documents |
 
 ### Output Templates
 
@@ -327,6 +339,7 @@ Each sub-agent is dispatched the same way: **read its prompt file and dispatch v
 | Pipeline Status Report | `./templates/pipeline-status.md` | Phase 5 |
 | Review Feedback Report | `./templates/review-feedback-report.md` | Phase 6 |
 | Error Handling matrix | `./references/error-handling.md` | on first failure |
+| Explicit merge procedure | `./references/explicit-merge.md` | on an explicit user merge instruction |
 
 ---
 
@@ -346,7 +359,7 @@ When a change touches multiple repos, implement and merge in the order defined i
 - Create a separate worktree **and** CR in each affected repo, all under the same `{branch_name}` directory so sibling relative paths (e.g., `../<sibling-repo>`) remain valid — see `PROJECT.md § Concurrent Session Isolation`
 - Link CRs to each other in the description (e.g., "Depends on <GROUP>/<upstream-repo> {cr_reference}")
 - Do not merge a downstream CR until its upstream dependency is merged and the registry image is updated
-- Confirm merge order with the user before requesting any merges
+- Confirm merge order with the user before a maintainer merges any CR
 
 ---
 

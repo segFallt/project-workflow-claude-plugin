@@ -62,9 +62,9 @@ Ask the user the following questions (use `AskUserQuestion` tool for the platfor
 From the answers, **derive automatically** (do not ask):
 - `API_BASE_URL`: GitLab → `<instance>/api/v4`; GitHub hosted → `https://api.github.com`; GitHub Enterprise → `<instance>/api/v3`; Gitea → `<instance>/api/v1`
 - `GROUP_DASHBOARD`: `<instance>/groups/<group>` (GitLab) or `<instance>/orgs/<org>` (GitHub/Gitea)
-- Which API reference skill to mention: `project-workflows:gitlab-api` / `project-workflows:github-api` / `project-workflows:gitea-api`
+- `{host}`: the lowercase platform (`gitlab` / `github` / `gitea`), which names the host-API reference (`{host}-api`)
 
-**Generate immediately:** Read `./templates/PROJECT.md` — the canonical emittable skeleton — and write it to `.claude/project-config/PROJECT.md`, populated from the answers: substitute each `{placeholder}` with its derived value, and expand every `{not-configured stanza}` to the exact two-line marker defined by the **Not-Configured Marker** in `./references/file-generation-rules.md`. The template's `{not-configured stanza}` tokens mark sections not yet collected. Keep the first line — the `<!-- pw-version: ... -->` version stamp — and all 15 `##` headings exactly as written, in order: they are the canonical **Required Section Headings** in `./references/file-generation-rules.md`. For a fuller per-section structural reference with fill-in examples, see `./references/project-md-reference.md`.
+**Generate immediately:** Read `./templates/PROJECT.md` — the canonical emittable skeleton — and write it to `.claude/project-config/PROJECT.md`, populated from the answers: substitute each `{placeholder}` with its derived value, and expand every `{not-configured stanza}` to the exact two-line marker defined by the **Not-Configured Marker** in `./references/file-generation-rules.md`. The template's `{not-configured stanza}` tokens mark sections not yet collected. Keep the first line — the `<!-- pw-version: ... -->` version stamp — and all 16 `##` headings exactly as written, in order: they are the canonical **Required Section Headings** in `./references/file-generation-rules.md`. For a fuller per-section structural reference with fill-in examples, see `./references/project-md-reference.md`.
 
 Confirm to the user: "PROJECT.md created with your project identity and source control settings."
 
@@ -135,19 +135,21 @@ Confirm: "Infrastructure sections updated in PROJECT.md."
 
 ## Step 6: Fresh Init — Optional Sections
 
-Ask the user (use `AskUserQuestion` tool with multi-select):
+Ask the user which additional PROJECT.md sections to fill in now (they can add the rest later by re-running `/project-workflows:init`). Use one `AskUserQuestion` call with three multi-select questions (the tool allows at most 4 options per question); a question with nothing selected skips those sections:
 
-> "Which additional sections of PROJECT.md would you like to fill in now? (You can always add these later by running `/project-workflows:init` again)"
->
-> Options:
+> **Routing & work items:**
 > - Domain Concepts (terminology definitions, signal-to-repo routing, PRD directory path) — needed for `issue-creation` skill routing
 > - Work Item Conventions (hierarchy & typing, lifecycle & status, comment & body conventions) — optional guidance for the `work-item` skill
+> - Agent Model Tiering (override the plugin's default sub-agent model tiers)
+>
+> **Service:**
 > - API Endpoints (table of your service's primary API endpoints)
 > - Database Schema (table of database tables and their purpose)
 > - Cross-Cutting Concerns (auth flow, message queues, caching, shared data models)
+>
+> **Docs & release:**
 > - Design Documentation (paths to your architecture docs, diagrams, PRDs)
 > - Git Tags (current version tags per repo)
-> - Skip all for now
 
 For each selected section, ask a focused conversational prompt and generate the section content. Structure each section exactly as below:
 
@@ -166,6 +168,11 @@ Generate the `## Domain Concepts` section using the structure in `./references/s
 > - **Comment & body conventions:** what should a well-formed item body contain, and what are your comment conventions (prefixes, status-update format, links to commits/branches/change requests)?"
 
 Generate the `## Work Item Conventions` section using the structure in `./references/section-templates.md`.
+
+**Agent Model Tiering** — Read `../../shared/model-tiering.md`, show its default table, then ask:
+> "These are the plugin's default model tiers per sub-agent. Which keys do you want to override, and with which tier (`haiku`, `sonnet`, `opus`, or `inherit`)? Unlisted keys keep their default."
+
+Accept only keys listed in `shared/model-tiering.md` and only the tiers `haiku`, `sonnet`, `opus`, `inherit`; re-ask on anything else (e.g. a full model ID or a misspelled key). Generate the `## Agent Model Tiering` section with only the overridden keys, using the structure in `./references/section-templates.md`. If no key is overridden, leave the `<!-- not-configured -->` stub.
 
 **API Endpoints** — Ask:
 > "List your primary API endpoints: method, path, description, auth required (yes/no), which service handles it."
@@ -218,7 +225,7 @@ Ask the user (use `AskUserQuestion` tool with multi-select):
 > - `testing-spec` — integration testing from specs: PRDs, issues, `.feature` files (needs TEST-MATRIX.md + SPEC-MANIFEST.md)
 > - `testing-prd` — integration testing driven by your PRDs (needs TEST-MATRIX.md + PRD-MANIFEST.md; superseded by `testing-spec`)
 
-**For `code-review`:** Generate `.claude/project-config/STANDARDS.md` by **reading the template** at `skills/init/templates/STANDARDS.md` (in the same plugin directory as this skill file). This template is the **single source** — do not inline its content here. Keep its `<!-- pw-version: 1.5.0 -->` first line and its `## Universal Principles` table.
+**For `code-review`:** Generate `.claude/project-config/STANDARDS.md` by **reading the template** at `skills/init/templates/STANDARDS.md` (in the same plugin directory as this skill file). This template is the **single source** — do not inline its content here. Keep its `<!-- pw-version: 1.6.0 -->` first line and its `## Universal Principles` table.
 
 **Interactive Universal Principles.** Present the seed Universal Principles rows from the template and ask the user to tailor them:
 
@@ -242,7 +249,7 @@ Then ask: "Would you like to fill in repo-specific standards for any of your rep
 
 **For `testing-static`, `testing-spec`, or `testing-prd`:** Generate `.claude/project-config/TEST-MATRIX.md`:
 
-Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.5.0 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
+Read the template file at `skills/init/templates/TEST-MATRIX.md` (in the same plugin directory as this skill file) to get the exact structure. Add `<!-- pw-version: 1.6.0 -->` as the first line of the generated file, then pre-fill what you know from earlier phases:
 
 - **Docker Compose Startup Sequence:** Replace `<WORKTREES_BASE>` with the actual worktrees base from Step 5. Replace `<DEPLOY_REPO>` with the deploy repo from Step 5. Fill in the migration command (Step 4) and seed command (Step 5) if provided; otherwise leave the `<!-- REPLACE THIS -->` markers.
 - **All `<!-- REPLACE THIS: ... -->` comment blocks:** Keep them in place so the user knows what to fill in. Do NOT remove these markers — they are review prompts for the user.
@@ -259,13 +266,13 @@ Ask:
 > - Test method (curl HTTP calls, Playwright, etc.)
 > - Priority: Must Have / Should Have / Nice to Have"
 
-Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.5.0 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
+Read the template at `skills/init/templates/PRD-MANIFEST.md` (in the same plugin directory as this skill file). Generate PRD-MANIFEST.md with that full static content, add `<!-- pw-version: 1.6.0 -->` as the first line, and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` with populated tables from the user's answers.
 
-**For `testing-spec`:** Generate `.claude/project-config/SPEC-MANIFEST.md` from `skills/init/templates/SPEC-MANIFEST.md`. Keep the `<!-- pw-version: 1.5.0 -->` first line, fill the **Spec Sources** table from the docs root and spec sources captured in the Design Documentation step (PRD directory, `.feature` globs, issue references), and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` from the user's answers. Retain the `PRD-MANIFEST.md` template this release — `testing-spec` reads `SPEC-MANIFEST.md` and falls back to a legacy `PRD-MANIFEST.md`.
+**For `testing-spec`:** Generate `.claude/project-config/SPEC-MANIFEST.md` from `skills/init/templates/SPEC-MANIFEST.md`. Keep the `<!-- pw-version: 1.6.0 -->` first line, fill the **Spec Sources** table from the docs root and spec sources captured in the Design Documentation step (PRD directory, `.feature` globs, issue references), and replace the `<!-- REPLACE THIS -->` blocks in `## Test ID Prefixes` and `## Feature Priorities` from the user's answers. Retain the `PRD-MANIFEST.md` template this release — `testing-spec` reads `SPEC-MANIFEST.md` and falls back to a legacy `PRD-MANIFEST.md`.
 
 **For any skill NOT selected:** Still create the config file (so it exists and is discoverable) but with a clear header:
 ```
-<!-- pw-version: 1.5.0 -->
+<!-- pw-version: 1.6.0 -->
 <!-- pw-status: not-configured -->
 > **Note:** This file has not been configured yet. Run `/project-workflows:init` and select the relevant skill to set it up interactively.
 ```

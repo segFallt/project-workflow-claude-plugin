@@ -1,0 +1,6 @@
+{
+  "number": 12, "state": "open", "merged": false, "draft": false, "title": "feat: export",
+  "head": {"ref": "feature/12-export", "sha": "aaaa111122223333444455556666777788889999"},
+  "base": {"ref": "main", "sha": "bbbb"},
+  "updated_at": "2026-10-05T16:00:58Z", "html_url": "https://github.example.test/grp/repo/pull/12"
+}

@@ -232,3 +232,7 @@
 .ci/node_modules/yaml/dist/stringify/stringifyPair.js
 .ci/node_modules/yaml/dist/stringify/stringifyString.d.ts
 .ci/node_modules/yaml/dist/stringify/stringifyString.js
+.ci/evals/cost/out/
+.ci/evals/cost/results/
+.ci/evals/cost/curation-*.json
+__pycache__/

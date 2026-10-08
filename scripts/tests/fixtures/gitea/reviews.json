@@ -1,0 +1,4 @@
+[
+  {"id": 31, "body": "", "state": "REQUEST_CHANGES", "user": {"login": "reviewer"}, "submitted_at": "2026-10-05T15:49:40+02:00", "updated_at": "2026-10-05T15:49:40+02:00"},
+  {"id": 32, "body": "Addressed.", "state": "COMMENT", "user": {"login": "agent-bot"}, "submitted_at": "2026-10-05T16:10:00+02:00", "updated_at": "2026-10-05T16:10:00+02:00"}
+]

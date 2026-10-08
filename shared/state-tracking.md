@@ -69,14 +69,17 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
     "reference": "!123",
     "iid": 123,
     "url": "https://gitlab.example.com/group/repo/-/merge_requests/123",
-    "project_id": "group/repo"
+    "project_id": "group/repo",
+    "reported_head_sha": "a4c02bd9f1e7c3b2d6a8e0f4c5b7d9e1f3a2c4b6"
   },
   "phase": 6,
   "loop": {
     "review_round": 2,
     "max_review_rounds": 5,
     "last_checked_at": "2026-04-18T12:30:00Z",
-    "last_poll_at": "2026-04-18T12:34:56Z"
+    "last_poll_at": "2026-04-18T12:34:56Z",
+    "last_fingerprint_pipeline": "group/repo:123=9e4c1b2a7d0f3e58",
+    "last_fingerprint_activity": "group/repo:123=3f2a9c0d1e4b5a67"
   },
   "design_document_md": "## Design: #42...",
   "skipped_items": [
@@ -95,8 +98,10 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
 
 **Field notes:**
 - `cr` is `null` until the CR is created (Phase 4)
+- `cr.reported_head_sha` (optional; absent until the first readiness report) is the CR head SHA stated in the latest Phase 6 readiness report; an explicit merge proceeds only while the CR head still equals it
 - `worktrees` is a map keyed by repo name — supports multi-repo changes
-- `loop.last_poll_at` is updated on every write; doubles as a liveness heartbeat
+- `loop.last_poll_at` is updated on every write and at each poll-script chunk exit; doubles as a liveness heartbeat
+- `loop.last_fingerprint_pipeline` / `loop.last_fingerprint_activity` (optional) — the `fingerprint` the poll script last printed (`shared/poll-wait.md`) for the Phase 5 `pipeline` / Phase 6 `cr-activity` watch; passed back as `--fingerprint` on resume so the wait continues from it after compaction. Kept apart because the two kinds never match
 - `design_document_md` stores the full approved design doc text (set at end of Phase 2)
 - `skipped_items` is appended whenever the review-feedback sub-agent skips an item
 - `user_confirmations` is an audit log of user-approved gates
@@ -117,11 +122,14 @@ fix/17-redis-ack-on-error        →  fix-17-redis-ack-on-error
       "web_url": "https://gitlab.example.com/group/repo/-/merge_requests/123",
       "last_review_at": "2026-04-18T12:10:00Z",
       "review_round": 1,
-      "skipped_items": []
+      "skipped_items": [],
+      "last_fingerprint": "group/repo:123=8b1d0e7f2c3a4d59"
     }
   ]
 }
 ```
+
+**Field notes:** `tracked_crs[].last_fingerprint` (optional) is that CR's `targets[...].fingerprint` entry from the poll script; Phase 2 passes all entries back, comma-joined, as `--fingerprint`. Liveness is the top-level `updated_at`.
 
 ---
 
@@ -146,7 +154,7 @@ STATE_FILE="$STATE_DIR/tracking.json"
 # Apply the same mkdir -p / mktemp + mv -f pattern above with these paths
 ```
 
-Update `updated_at` (and `loop.last_poll_at` when in a loop) on every write.
+Update `updated_at` (and `loop.last_poll_at` when in a loop) on every write; in a loop that is once per poll-script chunk exit, not per minute.
 
 ---
 

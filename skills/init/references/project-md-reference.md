@@ -46,7 +46,7 @@ Load credentials from `<ENV_FILE_PATH>`:
 
 > **Review token:** The code review prompt uses `<REVIEW_TOKEN_ENV_VAR>` instead of the general token. See the review prompt's Environment Setup for its loading instructions.
 
-Once configured, see `project-workflows:<host>-api` skill for all API interaction patterns where `<host>` is the lowercase selected `<REPO_HOST>`. **The `project-workflows` plugin ships with API reference skills for each supported host (gitlab-api, github-api, gitea-api).** Do not edit these skills; they document standardized operation names used by the action prompts.
+Once configured, action skills read the `<host>-api` reference section-by-section per the plugin's `shared/api-dispatch.md`, where `<host>` is the lowercase selected `<REPO_HOST>`. **The `project-workflows` plugin ships a host-API reference for each supported host (`gitlab-api`, `github-api`, `gitea-api`), also invocable directly.** Do not edit them; they document the standardized operation names used by the action prompts.
 
 ---
 
@@ -231,6 +231,16 @@ Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` f
 - _Body structure: what sections a well-formed item body contains._
 - _Comment conventions: prefixes, status-update format, when to comment._
 - _Cross-references: how to link commits, branches, and change requests._
+
+---
+
+## Agent Model Tiering
+
+> [FILL IN] Optional per-project overrides of the plugin's default sub-agent model tiers (`shared/model-tiering.md` in the plugin). List only the keys you override; unlisted keys keep their default. Values: `haiku`, `sonnet`, `opus`, or `inherit` (the session model).
+
+| Sub-agent | Tier |
+|-----------|------|
+| code-exploration | sonnet |
 
 ---
 

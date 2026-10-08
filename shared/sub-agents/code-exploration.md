@@ -5,13 +5,13 @@
 This sub-agent is dispatched by skill orchestrators to explore the codebase before writing code or creating issues. The `{purpose}` placeholder controls the output schema:
 
 - `"design"` — dispatched by the `development` skill during Phase 2 (Architecture & Solution Design). Returns a schema that maps to the Design Document.
-- `"issue-context"` — dispatched by the `issue-creation` skill during Phase 2 (Codebase Exploration & Repo Assignment). Returns a schema that maps to the Technical Context section of the issue.
+- `"issue-context"` — dispatched by the `issue-creation`, `work-item` and `documentation` skills. Returns a schema that maps to the Technical Context section of the issue.
 
 ---
 
 ## Prompt Template
 
-Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values:
+Dispatch this prompt via the Agent tool, substituting all `{placeholder}` values, and pass `model` resolved for key `code-exploration` per `shared/model-tiering.md` (omit when it resolves to `inherit`):
 
 ```
 You are a code explorer for the project described in `.claude/project-config/PROJECT.md`.
@@ -127,7 +127,7 @@ Rules:
 | `{local_repo_path}` | Absolute local path from `PROJECT.md § Repository Locations` |
 | `{paste the relevant repo section from PROJECT.md}` | The repo's section from `PROJECT.md` (architecture, conventions, commands) |
 
-### When `{purpose}` is `"issue-context"` (dispatched by `issue-creation` skill)
+### When `{purpose}` is `"issue-context"` (dispatched by `issue-creation`, `work-item` or `documentation`)
 
 | Placeholder | Value to pass |
 |---|---|

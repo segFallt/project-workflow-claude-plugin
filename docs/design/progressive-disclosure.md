@@ -22,7 +22,11 @@ Three layers, loaded in order and only as far as a task requires:
 
 The lever is L2 → L3: the coordinator body stays a navigable map of the workflow, and the heavy detail sits behind a `Read …` pointer that a run only follows when it reaches the relevant step. A fresh-init run, for example, never reaches the Update-Mode pointer, so that detail is never loaded.
 
-> **Out of scope (deferred):** *how* a step consumes L3 detail once loaded — reading it into context vs. executing it CLI-first (grep/sed over the file) — is a separate behavioural lever, not part of this structural convention.
+### CLI-first consumption — section reads
+
+Most L3 files are small enough to read whole. Large reference files are instead consumed **CLI-first**: the step extracts only the sections it needs with Bash, so the rest never enters context. The host-API skills (`skills/{gitlab,github,gitea}-api/SKILL.md`, about 680–850 lines each) are the case in point. Coordinators do not load them through the Skill tool; `shared/api-dispatch.md` resolves the host from `PROJECT.md § Source Control`, builds the file path from the plugin root the invoking skill states, and extracts `## Authentication`, `## Project/Repo Identification`, each declared `### N. <OPERATION>` by name, and `## Pagination` / `## Inline Comment Position Object` / `## Field Reference` only when the operation or skill needs them. A skill reads only operations in its "Operations used by this skill" list. The host-API skills stay model-invocable for direct use.
+
+Shared modules read with the Read tool get no `${CLAUDE_PLUGIN_ROOT}` substitution, and the variable is not exported to Bash, so each consuming `SKILL.md` states `Plugin root: ${CLAUDE_PLUGIN_ROOT}` beside its `api-dispatch.md` pointer (substituted when the skill loads). The cost rationale for this and the other cost levers is in [cost-controls.md](cost-controls.md).
 
 ## Components — the Layer-3 taxonomy
 
@@ -55,7 +59,8 @@ The narrow reading to avoid: "`templates/` is only for files carrying `REPLACE T
 ## Interfaces & contracts
 
 - **Pointer idiom.** L2 references L3 with a one-line `Read …` pointer carrying a repo-relative path: `./templates/<x>.md`, `./references/<x>.md`, `./sub-agents/<x>.md` (relative to the skill directory) or `../../shared/<x>.md` (repo root). Replacing an inlined block with its pointer at the exact step is the mechanical form of a retrofit.
-- **CI validation.** `.ci/smoke-test.sh` resolves those four pointer forms in every `SKILL.md` and fails the job on any target that is missing or empty — a dangling relocation link cannot merge. The check runs identically in the GitLab (`smoke-test` job) and GitHub (`validate-plugin` workflow) pipelines.
+- **Section-read pointer.** A fifth form names a section of a large L3 file rather than the whole file: "the host-API `§ Field Reference` / `§ Pagination` (read per `shared/api-dispatch.md`)", or "the gitea-api SKILL.md `§ REPLY_TO_CR_THREAD`". It is resolved through the dispatch module's extractor, not by a whole-file `Read`.
+- **CI validation.** `.ci/smoke-test.sh` resolves those four pointer forms in every `SKILL.md` and fails the job on any target that is missing or empty — a dangling relocation link cannot merge. Check 6 guards the section-read form: each host-API skill must carry the top-level sections `api-dispatch.md` extracts and exactly one `### N. NAME` heading per operation, failing with the host and the missing anchor. Both checks run identically in the GitLab (`smoke-test` job) and GitHub (`validate-plugin` workflow) pipelines.
 - **Release packaging.** The release archive is built as `tar czf "$ARCHIVE" skills/ shared/ .claude-plugin/ README.md CHANGELOG.md` — the `skills/` and `shared/` trees ship (alongside the manifest, README, and changelog). Every Layer-3 file an installed skill loads **must** live under `skills/` or `shared/` — a `references/`/`templates/` file placed anywhere else would resolve in the repo but be absent from the shipped plugin. This SDD itself lives under `docs/`, which is **not** in the archive, because it is *source documentation*, read by contributors, not loaded by any skill at runtime — intentionally not shipped.
 - **Frontmatter contract.** `.ci/validate-frontmatter.ts` checks `name` + `description` on `SKILL.md` only. `templates/` and `references/` `.md` files therefore carry **no** frontmatter.
 
@@ -90,6 +95,7 @@ Then replace the block in `SKILL.md` with a one-line `Read …` pointer at the s
 | Failure | Cause | Guard |
 |---------|-------|-------|
 | Dangling pointer | L2 points to a moved/renamed L3 file | `smoke-test.sh` fails CI naming the `SKILL.md` and path |
+| Silently missing API recipe | A host-API heading renamed/removed, so a section read extracts nothing | `smoke-test.sh` check 6 fails naming the host and anchor; `api-dispatch.md` stops on an empty extract |
 | Shipped skill missing detail | L3 file placed outside `skills/`/`shared/` | Release-archive tar scope + author-guidance step 3/4 destinations |
 | Behaviour drift on relocation | Moved block edited, not moved verbatim | Loss-free check: `git diff` shows only the pointer changed; byte-identical target |
 | Frontmatter validation error | Frontmatter added to a `templates/`/`references/` file | Convention: those files carry none; `validate-frontmatter` scopes to `SKILL.md` |

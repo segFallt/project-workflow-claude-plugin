@@ -1,0 +1,11 @@
+{
+  "id": "subagent-exploration",
+  "description": "read-only: one code-exploration sub-agent dispatch on the plugin repo; A/B the sub-agent model via SUBAGENT_MODEL (#70 lever)",
+  "writes": false,
+  "cwd": "temp",
+  "prompt": "Read {{PLUGIN_ROOT}}/shared/sub-agents/code-exploration.md. Dispatch exactly one sub-agent with the Agent tool using its Prompt Template, with {purpose} = \"issue-context\" and the `model` parameter set to \"{{SUBAGENT_MODEL}}\". Substitute: task = \"Explore the codebase to gather technical context for an issue\"; issue type = improvement; issue description = \"Change shared/api-dispatch.md so coordinators read only the host-API sections they need (Authentication, the operation's section, Pagination when paginating, Field Reference when cited) by file path, instead of loading the whole gitlab-api/github-api/gitea-api SKILL.md through the Skill tool. Extend .ci/smoke-test.sh to validate the new pointer form.\"; repo = project-workflow-claude-plugin; local path = {{PLUGIN_ROOT}}; project context = \"Claude Code plugin: Markdown skills under skills/, shared modules under shared/, CI under .ci/.\". Do not explore the code yourself. When the sub-agent returns, reply with only its JSON.",
+  "followUps": [],
+  "askAnswers": [],
+  "endWhen": { "maxTurns": 1 },
+  "maxBudgetUsd": 4
+}

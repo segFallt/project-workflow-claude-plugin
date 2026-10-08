@@ -46,6 +46,7 @@ Read `../../shared/environment-setup.md`.
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `LIST_LABELS` — list project/repo labels (to pick from existing labels)
@@ -125,7 +126,7 @@ A phased loop. **Lifecycle rules are NEVER hardcoded in this skill** — they co
 | Summarising technical context | Body composition and rewrite |
 | Flagging config dependencies and risks | User interaction and escalation |
 
-Dispatch via `../../shared/sub-agents/code-exploration.md`, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined there.
+Dispatch via `../../shared/sub-agents/code-exploration.md`, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined there, with `model` per `../../shared/model-tiering.md`.
 
 ---
 

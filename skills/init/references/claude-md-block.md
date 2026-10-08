@@ -22,9 +22,7 @@ Config directory: `.claude/project-config/`
 | Static Testing | `project-workflows:testing-static` |
 | Spec-driven Testing | `project-workflows:testing-spec` |
 | PRD-driven Testing | `project-workflows:testing-prd` |
-| GitHub API reference | `project-workflows:github-api` |
-| GitLab API reference | `project-workflows:gitlab-api` |
-| Gitea API reference | `project-workflows:gitea-api` |
+| Host API reference (direct lookup; action skills read it section-by-section) | `project-workflows:gitlab-api` / `github-api` / `gitea-api` |
 
 > **Note:** Fill in `PROJECT.md` first — it is the hub all other files and skills reference.
 

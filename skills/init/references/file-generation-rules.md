@@ -15,6 +15,7 @@ The following headings in `PROJECT.md` are read by other skills and **must appea
 - `## Cross-Cutting Concerns`
 - `## Domain Concepts`
 - `## Work Item Conventions`
+- `## Agent Model Tiering`
 - `## API Endpoints`
 - `## Database Schema`
 - `## Concurrent Session Isolation`
@@ -32,7 +33,7 @@ The following headings in `PROJECT.md` are read by other skills and **must appea
 
 ### Version Stamp Format
 
-Always place `<!-- pw-version: 1.5.0 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
+Always place `<!-- pw-version: 1.6.0 -->` as the **first line** of every generated config file. This enables update mode detection and template version tracking.
 
 ### Not-Configured Marker
 

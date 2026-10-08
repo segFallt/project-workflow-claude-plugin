@@ -4,7 +4,7 @@ Reusable workflow skills for code review, development, testing, and issue manage
 
 ## Overview
 
-`project-workflows` is a Claude Code plugin that provides 13 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task by delegating to specialised sub-agents for exploration, implementation, review, and API calls.
+`project-workflows` is a Claude Code plugin that provides 13 skills covering the full development lifecycle. Skills follow a coordinator + sub-agent pattern: a top-level skill orchestrates a task, makes the repository-host API calls itself, and delegates exploration, implementation, and review to specialised sub-agents.
 
 The plugin is project-agnostic — it reads project-specific configuration from files in `.claude/project-config/` (scaffolded by the `init` skill) rather than hard-coding any project details.
 
@@ -29,6 +29,12 @@ The plugin is project-agnostic — it reads project-specific configuration from 
 ## Prerequisites
 
 - [Claude Code CLI](https://claude.ai/code) installed (`npm install -g @anthropic-ai/claude-code`)
+- `curl` and `git` — used by the skills for host API calls and repository operations
+- `python3` (standard library only) — runs the bundled `scripts/poll-until-change.py`, which waits on CI and review activity for `development`, `code-review` and the testing skills
+- For unattended CI/review loops, allow the poll script permanently in your Claude Code settings. The skills pre-approve it only for the turn that invokes them:
+  ```json
+  { "permissions": { "allow": ["Bash(python3 */scripts/poll-until-change.py *)"] } }
+  ```
 
 ## Installation
 
@@ -81,7 +87,21 @@ Once configured, invoke skills using the Claude Code slash command syntax:
 /project-workflows:testing-static
 ```
 
-The API reference skills (`gitlab-api`, `github-api`, `gitea-api`) are loaded automatically by other skills when needed and do not need to be invoked directly.
+The API reference skills (`gitlab-api`, `github-api`, `gitea-api`) are read section-by-section by other skills (only the operations each skill needs); they are still invocable directly.
+
+### Sub-agent models
+
+Every sub-agent dispatch passes a model chosen by a fixed rule ([`shared/model-tiering.md`](shared/model-tiering.md)), never ad hoc. Defaults as of this release (`shared/model-tiering.md` is authoritative):
+
+| Sub-agent role | Keys | Default |
+|----------------|------|---------|
+| Read-heavy work | `code-exploration`, `doc-authoring`, `test-writing` | `sonnet` |
+| Code writing and review | `implementation`, `review-feedback`, `bug-fix`, `code-review-initial`, `code-review-re-review` | `inherit` (the session model) |
+
+- A default never raises cost: if it is a higher tier than your session model (`haiku` < `sonnet` < `opus`), or the session model can't be determined, the sub-agent inherits the session model.
+- **Project override:** list keys in the optional `## Agent Model Tiering` section of `PROJECT.md` (set up by `init`) with `haiku`, `sonnet`, `opus` or `inherit`. An override is used as-is, without the cap. Unlisted keys keep the default; an invalid row is ignored with a warning.
+- **User setting:** when `CLAUDE_CODE_SUBAGENT_MODEL` is set (to anything but `inherit`), it takes precedence over the plugin defaults; only a `PROJECT.md` override still applies. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` overrides everything.
+- Delegations without a sub-agent prompt file (test writing and linting in the testing skills) never get a plugin-chosen model: they use `CLAUDE_CODE_SUBAGENT_MODEL` if set, else the session model.
 
 ## Versioning & Releases
 

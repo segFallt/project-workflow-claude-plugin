@@ -45,6 +45,7 @@ Read `../../shared/environment-setup.md`.
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `LIST_LABELS` — list project/repo labels
@@ -159,7 +160,7 @@ Fetch labels from the API before composing the issue. Only use labels that actua
 
 ### Code Exploration Sub-Agent
 
-Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined in that file.
+Read `../../shared/sub-agents/code-exploration.md` and dispatch via the Agent tool, substituting `{purpose}` with `"issue-context"` and all other `{placeholder}` values defined in that file, with `model` per `../../shared/model-tiering.md`.
 
 ---
 
@@ -328,7 +329,7 @@ After successful issue creation, output the following summary:
 |-------|-------|
 | **URL** | {issue web URL} |
 | **Repo** | {repo_name} |
-| **Issue #** | #{issue_id} (`{issue_id}` = `iid` on GitLab, `number` on GitHub/Gitea — see your repo-host skill's Field Reference) |
+| **Issue #** | #{issue_id} (`{issue_id}` = `iid` on GitLab, `number` on GitHub/Gitea — see the host-API `§ Field Reference`, read per `shared/api-dispatch.md`) |
 | **Title** | {issue title} |
 | **Type** | {bug | feature | task | improvement} |
 | **Labels** | {comma-separated label names} |

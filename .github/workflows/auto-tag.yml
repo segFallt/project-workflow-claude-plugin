@@ -42,7 +42,7 @@ jobs:
         if: steps.tag.outputs.pushed == 'true'
         run: |
           ARCHIVE="project-workflows-${{ steps.tag.outputs.tag }}.tar.gz"
-          tar czf "$ARCHIVE" skills/ shared/ .claude-plugin/ README.md CHANGELOG.md
+          tar czf "$ARCHIVE" skills/ shared/ scripts/ .claude-plugin/ README.md CHANGELOG.md
           echo "ARCHIVE_NAME=$ARCHIVE" >> "$GITHUB_ENV"
 
       - name: Create GitHub Release

@@ -1,0 +1,25 @@
+{
+  "id": "work-item-refine",
+  "description": "work-item refinement mode on the issue created by work-item-create",
+  "writes": true,
+  "cwd": "sandbox",
+  "prompt": "/project-workflows:work-item #{{CREATED_ISSUE_IID}}",
+  "followUps": [
+    {
+      "match": "[\\s\\S]*",
+      "reply": "Use your recommendation. Do not merge, close, or approve any merge request.",
+      "repeat": true
+    }
+  ],
+  "askAnswers": [
+    {
+      "question": ".*",
+      "answer": "$first"
+    }
+  ],
+  "endWhen": {
+    "assistantMatches": "(?i)refinement summary|status::ready|posted",
+    "maxTurns": 8
+  },
+  "maxBudgetUsd": 5
+}

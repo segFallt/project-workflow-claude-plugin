@@ -1,6 +1,7 @@
 ---
 name: testing-prd
 description: Deprecated — use testing-spec instead. Runs integration tests generated dynamically from product requirement documents.
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/poll-until-change.py *)
 ---
 
 # Integration Testing Coordinator (PRD-Driven)
@@ -36,6 +37,7 @@ Before running this skill, ensure the following are in place:
 | Tool | `curl` | Required for API and health checks |
 | Tool | `git` | Required for branch and worktree operations |
 | Tool | `docker compose` | Required for stack management |
+| Tool | `python3` | Runs the bundled CI poll script (Phase 4). For unattended loops, add `Bash(python3 */scripts/poll-until-change.py *)` to `permissions.allow` in your settings |
 | Tool | Playwright MCP | Required for browser UI checks (UI-*) |
 
 ---
@@ -287,6 +289,8 @@ Additional error handling for PRD-driven testing:
 | | Test execution |
 | | PRD file reading and matrix generation |
 
+Pass `model` per `../../shared/model-tiering.md`: the bug-fix dispatch below uses key `bug-fix`; test-writing and linting dispatches have no key, so omit `model`.
+
 ### Dispatching the Bug-Fix Sub-Agent
 
 Before dispatching, create a worktree for the fix branch per `../../shared/worktree-setup.md`:
@@ -310,9 +314,11 @@ Then read `../../shared/sub-agents/bug-fix.md` and dispatch via the Agent tool w
 ## Repository Host API
 
 Read `../../shared/api-dispatch.md`.
+Plugin root: ${CLAUDE_PLUGIN_ROOT}
 
 **Operations used by this skill:**
 - `CREATE_CR` — create a change request after tests pass
+- `GET_CR` — get CR state (to detect when the user has merged or closed it)
 - `GET_CR_PIPELINES` — get CI pipeline/check status for a CR
 - `GET_PIPELINE_JOBS` — list jobs in a pipeline
 - `GET_JOB_LOG` — get the log for a specific job
