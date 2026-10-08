@@ -234,6 +234,16 @@ Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` f
 
 ---
 
+## Agent Model Tiering
+
+> [FILL IN] Optional per-project overrides of the plugin's default sub-agent model tiers (`shared/model-tiering.md` in the plugin). List only the keys you override; unlisted keys keep their default. Values: `haiku`, `sonnet`, `opus`, or `inherit` (the session model).
+
+| Sub-agent | Tier |
+|-----------|------|
+| code-exploration | sonnet |
+
+---
+
 ## API Endpoints
 
 > [FILL IN] List the primary API endpoints exposed by your services.

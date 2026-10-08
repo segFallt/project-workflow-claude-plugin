@@ -1,4 +1,4 @@
-<!-- pw-version: 1.5.0 -->
+<!-- pw-version: 1.6.0 -->
 # {project_name} — Project Reference
 
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns.
@@ -76,6 +76,12 @@ Once configured, see `project-workflows:{host}-api` skill for all API interactio
 ---
 
 ## Work Item Conventions
+
+{not-configured stanza}
+
+---
+
+## Agent Model Tiering
 
 {not-configured stanza}
 

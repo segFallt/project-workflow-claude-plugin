@@ -1,4 +1,4 @@
-<!-- pw-version: 1.5.0 -->
+<!-- pw-version: 1.6.0 -->
 # agent-sandbox — Project Reference
 
 > **Purpose:** This file provides the AI coding agent with the information needed to navigate, understand, and modify the project codebase. It is the central configuration that all action prompts reference at runtime via `PROJECT.md § Section Name` patterns.
@@ -141,6 +141,13 @@ New issues are created with `status::new`. Refinement sets `status::ready` once 
 ### Comment & Body Conventions
 
 Issue bodies use the sections Feature (or Bug), Acceptance Criteria (Gherkin), and Definition of Done. Reference issues as `#<iid>` and merge requests as `!<iid>`.
+
+---
+
+## Agent Model Tiering
+
+<!-- not-configured -->
+> This section has not been configured yet. Run `/project-workflows:init` to set it up.
 
 ---
 

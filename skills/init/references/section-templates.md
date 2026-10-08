@@ -147,6 +147,16 @@ Read all Markdown files in this directory as PRD inputs. See `PRD-MANIFEST.md` (
 {body structure, comment conventions, and cross-reference conventions from user input — or "Not applicable."}
 ```
 
+## Agent Model Tiering
+
+```
+## Agent Model Tiering
+
+| Sub-agent | Tier |
+|-----------|------|
+{one row per overridden key from user input: `| {key} | {tier} |`}
+```
+
 ## API Endpoints
 
 ```
